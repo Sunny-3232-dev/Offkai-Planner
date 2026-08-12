@@ -1,0 +1,454 @@
+import React, { useState } from 'react';
+import { IconPromptResult, IconStyleCandidate, ThumbnailAssets } from '../types';
+import { ArrowRightIcon, ChevronLeftIcon, RefreshIcon, CopyIcon, CheckIcon, CircleCropIcon, ImageIcon, LightbulbIcon } from './icons';
+
+interface ImagePromptStepProps {
+  iconPrompt: IconPromptResult | null;
+  thumbnailAssets: ThumbnailAssets | null;
+  iconLoading: boolean;
+  thumbnailLoading: boolean;
+  /** アイコンに載せる文字の手動変更（プロンプトも自動で組み立て直る） */
+  onChangeIconWord: (word: string) => void;
+  onGenerateIcon: () => void;
+  onGenerateThumbnail: () => void;
+  /** サムネイルプロンプトへのAI修正指示（要望はオフ会ごとに蓄積される） */
+  onReviseThumbnail: (feedback: string) => void;
+  /** これまでに蓄積されたサムネイル修正指示の履歴（オフ会ごと） */
+  thumbnailFeedbackHistory?: string[];
+  onNext: () => void;
+  onBack: () => void;
+}
+
+/** 告知サムネイルのトンマナプリセット（クライアント定義。共通ベース(imagePrompt)に版別スタイルを合成する） */
+const THUMBNAIL_TONES = [
+  {
+    key: 'clay',
+    label: 'ぷっくり3D',
+    style:
+      '\n\n■ 画風：ぷっくりとした3D（クレイ調で丸みがあり、柔らかく可愛い立体感のあるスタイル）。明るく親しみやすい配色で。',
+  },
+  {
+    key: 'photo',
+    label: '実写風',
+    style:
+      '\n\n■ 画風：写真のようにリアルな実写風。自然光と本物のような質感で、臨場感のある仕上がりに。',
+  },
+  {
+    key: 'illust',
+    label: 'やわらかイラスト',
+    style:
+      '\n\n■ 画風：手描き風のあたたかいイラスト。やさしい色使いと親しみやすいタッチで。',
+  },
+  {
+    key: 'pop',
+    label: 'ポップ',
+    style:
+      '\n\n■ 画風：ポップでフラットなデザイン。はっきりした配色とシンプルな形で、明るく元気な印象に。',
+  },
+] as const;
+
+type ThumbnailToneKey = (typeof THUMBNAIL_TONES)[number]['key'];
+
+function CopyButton({ text, label = 'コピー' }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // noop
+    }
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+        copied ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white hover:bg-slate-700'
+      }`}
+    >
+      {copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
+      {copied ? 'コピーしました' : label}
+    </button>
+  );
+}
+
+/** ChatGPT / Gemini 起動リンク（既存ツールの導線を踏襲） */
+function AiLauncherLinks() {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <a
+        href="https://chatgpt.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center px-4 py-1.5 bg-white border border-emerald-200 rounded-full text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+      >
+        ChatGPTを起動
+      </a>
+      <a
+        href="https://gemini.google.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center px-4 py-1.5 bg-white border border-orange-200 rounded-full text-xs font-bold text-orange-700 hover:bg-orange-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+      >
+        Geminiを起動
+      </a>
+    </div>
+  );
+}
+
+/** アイコンスタイルの雰囲気を伝える簡易プレビュー（CSS/絵文字による近似イメージ） */
+function IconStylePreview({ styleKey, word, emoji }: { styleKey: IconStyleCandidate['key']; word: string; emoji: string }) {
+  const wordSize = word.length > 4 ? 'text-[13px]' : 'text-lg';
+  if (styleKey === 'text') {
+    return (
+      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center">
+        <span className={`text-white font-bold ${wordSize} leading-none px-1 text-center`}>{word}</span>
+      </div>
+    );
+  }
+  if (styleKey === 'motif') {
+    return (
+      <div className="w-20 h-20 rounded-full bg-gradient-to-b from-amber-50 to-orange-100 border border-orange-200 flex flex-col items-center justify-center">
+        <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>
+        <span className="text-[10px] font-bold text-slate-700 mt-1 px-1 text-center leading-none">{word}</span>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-100 via-orange-50 to-sky-100 flex flex-col items-center justify-center"
+      style={{ boxShadow: 'inset 0 -6px 10px rgba(0,0,0,0.06), inset 0 6px 10px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.10)' }}
+    >
+      <span className="text-2xl leading-none" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.25))' }} aria-hidden="true">{emoji}</span>
+      <span className="text-[10px] font-bold text-slate-700 mt-1 px-1 text-center leading-none">{word}</span>
+    </div>
+  );
+}
+
+function GeneratingCard({ label }: { label: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center" role="status" aria-live="polite">
+      <div className="flex justify-center mb-3">
+        <div className="w-8 h-8 rounded-full border-2 border-sky-200 border-t-sky-600 animate-spin-slow" aria-hidden="true" />
+      </div>
+      <p className="text-sm text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+export default function ImagePromptStep({
+  iconPrompt,
+  thumbnailAssets,
+  iconLoading,
+  thumbnailLoading,
+  onChangeIconWord,
+  onGenerateIcon,
+  onGenerateThumbnail,
+  onReviseThumbnail,
+  thumbnailFeedbackHistory = [],
+  onNext,
+  onBack,
+}: ImagePromptStepProps) {
+  // 'ai' は「AIで調整」モード＝画風プリセットを合成せず、AI調整済みプロンプト自体を画風として使う
+  const [selectedTone, setSelectedTone] = useState<ThumbnailToneKey | 'ai'>('clay');
+  const [promptExpanded, setPromptExpanded] = useState(false);
+  const [thumbFeedback, setThumbFeedback] = useState('');
+  // 「AIで調整」パネルの開閉（トンマナのピルと同列に置くため、既定は閉じる）
+  const [aiAdjustOpen, setAiAdjustOpen] = useState(false);
+
+  const handleReviseThumbnail = () => {
+    if (!thumbFeedback.trim()) return;
+    onReviseThumbnail(thumbFeedback);
+    setThumbFeedback('');
+    // 調整結果はベースプロンプトに焼き込まれるため、画風プリセットを合成しない「AIで調整」モードへ切り替える
+    setSelectedTone('ai');
+  };
+  // 「AIで調整」選択時は画風プリセットを合成しない（AI調整でベースに焼き込まれた画風を上書きしないため）
+  const activeTone = selectedTone === 'ai' ? null : THUMBNAIL_TONES.find((t) => t.key === selectedTone) || THUMBNAIL_TONES[0];
+  const fullThumbnailPrompt = thumbnailAssets ? thumbnailAssets.imagePrompt + (activeTone?.style ?? '') : '';
+  const toneLabel = activeTone ? activeTone.label : 'AI調整版';
+
+  const [selectedIconStyle, setSelectedIconStyle] = useState<IconStyleCandidate['key']>('text');
+  const [iconPromptExpanded, setIconPromptExpanded] = useState(false);
+  const iconCandidates = iconPrompt?.candidates ?? [];
+  const activeIconCandidate =
+    iconCandidates.find((c) => c.key === selectedIconStyle) || iconCandidates[0] || null;
+
+  return (
+    <div className="max-w-2xl mx-auto py-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+        <h2 className="text-2xl font-bold text-slate-800">オフ会の画像を用意しましょう</h2>
+        <AiLauncherLinks />
+      </div>
+      <p className="text-sm text-slate-500 mb-2">
+        プロンプトは準備済みです。コピーして ChatGPT / Gemini に貼るだけで画像が作れます。
+      </p>
+      <p className="text-[11px] text-orange-600 font-bold mb-6">
+        Geminiでは、🍌画像を作成と思考モードにする。
+      </p>
+
+      {/* チャットアイコン */}
+      <section className="mb-8">
+        <h3 className="flex items-center gap-2 text-base font-bold text-slate-700 mb-3"><CircleCropIcon size={19} className="text-sky-600" />チャットアイコン</h3>
+        {!iconPrompt && iconLoading ? (
+          <GeneratingCard label="チャットアイコン用プロンプトを作成中です...（このまま他の作業もできます）" />
+        ) : iconPrompt && activeIconCandidate ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-slate-700">スタイルを選んでコピー</h4>
+              <CopyButton text={activeIconCandidate.prompt} label={`${activeIconCandidate.label}のプロンプトをコピー`} />
+            </div>
+
+            {/* アイコン文字（手で直せる。プレビュー・プロンプトも連動） */}
+            <div className="flex items-center gap-2 mb-3">
+              <label htmlFor="iconWord" className="text-xs font-semibold text-slate-600 shrink-0">
+                アイコン文字
+              </label>
+              <input
+                id="iconWord"
+                type="text"
+                value={iconPrompt.word}
+                onChange={(e) => onChangeIconWord(e.target.value)}
+                maxLength={10}
+                className="w-40 px-3 py-1.5 text-sm font-bold text-sky-700 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+              />
+              <span className="text-[11px] text-slate-400">自由に書き換えられます</span>
+            </div>
+
+            {/* スタイル候補（プレビュー付き） */}
+            <div className="grid grid-cols-3 gap-2 mb-2" role="radiogroup" aria-label="アイコンのスタイル">
+              {iconCandidates.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedIconStyle === c.key}
+                  onClick={() => setSelectedIconStyle(c.key)}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors ${
+                    selectedIconStyle === c.key
+                      ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-200'
+                      : 'border-slate-200 bg-white hover:border-sky-300'
+                  }`}
+                >
+                  <IconStylePreview styleKey={c.key} word={iconPrompt.word} emoji={iconPrompt.emoji} />
+                  <span className={`text-xs font-semibold ${selectedIconStyle === c.key ? 'text-sky-700' : 'text-slate-600'}`}>
+                    {c.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400 mb-3">
+              ※プレビューはイメージです（実際の仕上がりは画像生成AIによって変わります）
+            </p>
+
+            <button
+              onClick={() => setIconPromptExpanded((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors mb-2"
+            >
+              <span className={`transition-transform duration-200 ${iconPromptExpanded ? 'rotate-180' : ''}`}>▾</span>
+              プロンプトを表示
+            </button>
+            {iconPromptExpanded && (
+              <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 rounded-xl p-4 whitespace-pre-wrap break-words mb-3">
+                {activeIconCandidate.prompt}
+              </p>
+            )}
+
+            {iconPrompt.styleNote && (
+              <p className="text-xs text-slate-400 flex items-center gap-1"><LightbulbIcon size={13} className="shrink-0" />{iconPrompt.styleNote}</p>
+            )}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <button
+                onClick={onGenerateIcon}
+                disabled={iconLoading}
+                className="inline-flex items-center gap-1.5 text-xs text-sky-600 hover:text-sky-800 disabled:opacity-50 transition-colors"
+              >
+                <RefreshIcon size={13} />
+                {iconLoading ? '作り直しています...' : '文字・モチーフを考え直してもらう'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+            <p className="text-sm text-slate-500 mb-4">チャットアイコン用のプロンプトを作ります</p>
+            <button
+              onClick={onGenerateIcon}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition-colors"
+            >
+              プロンプトを生成する
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* 告知サムネイル */}
+      <section className="mb-8">
+        <h3 className="flex items-center gap-2 text-base font-bold text-slate-700 mb-3"><ImageIcon size={19} className="text-sky-600" />告知サムネイル</h3>
+        {!thumbnailAssets && thumbnailLoading ? (
+          <GeneratingCard label="サムネイル素材を作成中です...（このまま他の作業もできます）" />
+        ) : thumbnailAssets ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-slate-700">サムネイル生成プロンプト</h4>
+              <CopyButton text={fullThumbnailPrompt} label={`${toneLabel}のプロンプトをコピー`} />
+            </div>
+
+            {/* トンマナ選択ピル ＋ AIで調整（同列に並べる） */}
+            <div className="flex flex-wrap gap-1.5 mb-3" role="group" aria-label="サムネイルのトンマナ">
+              {THUMBNAIL_TONES.map((tone) => (
+                <button
+                  key={tone.key}
+                  type="button"
+                  onClick={() => { setSelectedTone(tone.key); setAiAdjustOpen(false); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    selectedTone === tone.key
+                      ? 'bg-sky-600 text-white border-sky-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-sky-300 hover:text-sky-600'
+                  }`}
+                >
+                  {tone.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedTone === 'ai') {
+                    setAiAdjustOpen((v) => !v);
+                  } else {
+                    setSelectedTone('ai');
+                    setAiAdjustOpen(true);
+                  }
+                }}
+                aria-expanded={aiAdjustOpen}
+                aria-pressed={selectedTone === 'ai'}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  selectedTone === 'ai'
+                    ? 'bg-amber-500 text-white border-amber-500'
+                    : 'bg-white text-amber-600 border-amber-300 hover:border-amber-400 hover:bg-amber-50'
+                }`}
+              >
+                ✨ AIで調整
+              </button>
+            </div>
+
+            {selectedTone === 'ai' && (
+              <p className="text-[11px] text-slate-400 mb-3 -mt-1">
+                AIで調整モードでは画風プリセットは合成されません。修正指示で伝えた画風・雰囲気がそのまま使われます
+              </p>
+            )}
+
+            {/* AIへの修正指示（雰囲気・訴求の変更。「AIで調整」ピルで開閉） */}
+            {aiAdjustOpen && (
+              <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-3 mb-3">
+                <label htmlFor="thumbnailFeedback" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  AIに修正指示を伝えて、サムネイルの雰囲気を変えられます
+                </label>
+                {thumbnailFeedbackHistory.length > 0 && (
+                  <p className="text-[11px] text-slate-400 mb-2">
+                    これまでに伝えた指示（{thumbnailFeedbackHistory.length}件）を踏まえて調整します: {thumbnailFeedbackHistory.join(' / ')}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-1.5 mb-2.5" aria-label="おすすめの指示">
+                  {[
+                    '漫画風に',
+                    'オラオラ系で目を引く感じに',
+                    '宝塚風の華やかな舞台調に',
+                    '開催時期の季節感を入れて',
+                    '映画のLP級のクオリティで',
+                    'レトロポップに',
+                    '高級感のある雰囲気に',
+                    '手描き風のゆるさに',
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setThumbFeedback((prev) => (prev ? `${prev}、${chip}` : chip))}
+                      className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 text-xs hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                    >
+                      ＋ {chip}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  id="thumbnailFeedback"
+                  value={thumbFeedback}
+                  onChange={(e) => setThumbFeedback(e.target.value)}
+                  rows={2}
+                  placeholder="例: 漫画風に／開催時期の季節感を入れて／映画のポスターみたいに"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white mb-2"
+                />
+                <button
+                  onClick={handleReviseThumbnail}
+                  disabled={thumbnailLoading || !thumbFeedback.trim()}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow"
+                >
+                  <RefreshIcon size={13} />
+                  {thumbnailLoading ? '調整しています...' : 'この指示で調整する'}
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => setPromptExpanded((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors mb-2"
+            >
+              <span className={`transition-transform duration-200 ${promptExpanded ? 'rotate-180' : ''}`}>▾</span>
+              プロンプトを表示
+            </button>
+            {promptExpanded && (
+              <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 rounded-xl p-4 whitespace-pre-wrap break-words mb-3">
+                {fullThumbnailPrompt}
+              </p>
+            )}
+
+            <p className="text-xs text-slate-400 mb-3 flex items-center gap-1">
+              <LightbulbIcon size={13} className="shrink-0" />
+              キャッチーなタイトル・日時・場所は、この画像の中に文字として描き込まれる想定です
+            </p>
+
+            <div className="pt-3 border-t border-slate-100">
+              <button
+                onClick={onGenerateThumbnail}
+                disabled={thumbnailLoading}
+                className="inline-flex items-center gap-1.5 text-xs text-sky-600 hover:text-sky-800 disabled:opacity-50 transition-colors"
+              >
+                <RefreshIcon size={13} />
+                {thumbnailLoading ? '作り直しています...' : 'ゼロから作り直す'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+            <p className="text-sm text-slate-500 mb-4">
+              イメージ図＋日時＋場所入りのサムネイル素材を作ります
+            </p>
+            <button
+              onClick={onGenerateThumbnail}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition-colors"
+            >
+              サムネイル素材を生成する
+            </button>
+          </div>
+        )}
+      </section>
+
+      <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 mt-6">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors"
+        >
+          <ChevronLeftIcon size={16} />
+          詳細情報に戻る
+        </button>
+        <button
+          onClick={onNext}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
+        >
+          オフ会チャットを立ち上げる
+          <ArrowRightIcon size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,192 @@
+import React, { useState } from 'react';
+import { OrganizerProfile, VenueType } from '../types';
+import { ArrowRightIcon } from './icons';
+
+interface ProfileInputProps {
+  profile: OrganizerProfile;
+  onChange: (profile: OrganizerProfile) => void;
+  onNext: () => void;
+}
+
+type ThemeChoice = 'yes' | 'no';
+
+export default function ProfileInput({ profile, onChange, onNext }: ProfileInputProps) {
+  // 「企画は決まっているか」を明確な二択にする（小さい説明文だけでは伝わらなかったため）
+  const [themeChoice, setThemeChoice] = useState<ThemeChoice>(
+    () => (profile.plannedTheme.trim() ? 'yes' : 'no')
+  );
+  const isThemeDecided = themeChoice === 'yes';
+  // テーマが決まっている場合、企画案はテーマから作るため自己紹介は必須にしない
+  // （告知文の自己紹介欄には使われるが、空欄でも生成自体は進められる）
+  const canProceed = isThemeDecided
+    ? profile.plannedTheme.trim().length > 0
+    : profile.selfIntro.trim().length >= 10;
+
+  const set = (patch: Partial<OrganizerProfile>) => onChange({ ...profile, ...patch });
+
+  const chooseThemeDecided = () => setThemeChoice('yes');
+  const chooseThemeUndecided = () => {
+    setThemeChoice('no');
+    set({ plannedTheme: '' });
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto py-8 animate-fade-in">
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">あなたのことを教えてください</h2>
+      <p className="text-sm text-slate-500 mb-8">
+        入力内容をもとに、あなたに合ったオフ会をAIが一緒に考えます。リベシティのプロフィール文を貼り付けてもOKです。
+      </p>
+
+      <div className="space-y-6">
+        <div>
+          <label htmlFor="organizerName" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            お名前（ニックネーム） <span className="text-slate-400 text-xs">任意</span>
+          </label>
+          <input
+            id="organizerName"
+            type="text"
+            value={profile.organizerName}
+            onChange={(e) => set({ organizerName: e.target.value })}
+            placeholder="例: リーマンくん、両子ママ"
+            className="w-full px-4 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+          />
+          <p className="mt-1 text-xs text-slate-400">告知文・つぶやきの自己紹介で主催者名として使われます</p>
+        </div>
+
+        <div>
+          <span className="block text-sm font-semibold text-slate-700 mb-1.5">
+            どこで開催したいですか？ <span className="text-red-500 text-xs">必須</span>
+          </span>
+          <div className="flex gap-2" role="radiogroup" aria-label="開催したい場所">
+            {([
+              { type: 'offline' as VenueType, label: '対面（オフライン）' },
+              { type: 'online' as VenueType, label: 'オンライン' },
+            ]).map((v) => (
+              <button
+                key={v.type}
+                type="button"
+                role="radio"
+                aria-checked={profile.venuePreference === v.type}
+                onClick={() => set({ venuePreference: v.type })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  profile.venuePreference === v.type
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <span className="block text-sm font-semibold text-slate-700 mb-1.5">
+            企画は決まっていますか？ <span className="text-red-500 text-xs">必須</span>
+          </span>
+          <div className="flex gap-2 mb-3" role="radiogroup" aria-label="企画は決まっているか">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!isThemeDecided}
+              onClick={chooseThemeUndecided}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                !isThemeDecided
+                  ? 'bg-sky-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              決まっていない（AIに提案してほしい）
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={isThemeDecided}
+              onClick={chooseThemeDecided}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                isThemeDecided
+                  ? 'bg-sky-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              決まっている
+            </button>
+          </div>
+
+          {isThemeDecided ? (
+            <div>
+              <label htmlFor="plannedTheme" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                テーマ <span className="text-red-500">必須</span>
+              </label>
+              <input
+                id="plannedTheme"
+                type="text"
+                value={profile.plannedTheme}
+                onChange={(e) => set({ plannedTheme: e.target.value })}
+                placeholder="例: お茶会、AI勉強会、家計管理"
+                className="w-full px-4 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+              />
+              <p className="mt-1.5 text-xs text-sky-700 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
+                このテーマに沿った企画案を提案します（下の自己紹介・プロフィールは任意になります）
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+              「お金の5つの力」（貯める・稼ぐ・守る・増やす・使う）を軸に、AIが企画案を提案します
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="selfIntro" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            自己紹介・プロフィール{' '}
+            {isThemeDecided ? (
+              <span className="text-slate-400 text-xs">任意</span>
+            ) : (
+              <span className="text-red-500 text-xs">必須</span>
+            )}
+          </label>
+          <textarea
+            id="selfIntro"
+            value={profile.selfIntro}
+            onChange={(e) => set({ selfIntro: e.target.value })}
+            rows={6}
+            placeholder="例: 会社員をしながら副業でブログを書いています。リベシティ歴1年。人と話すのは好きですが、大人数を仕切るのは苦手です…"
+            className="w-full px-4 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            {isThemeDecided
+              ? '告知文の自己紹介にそのまま使われます。リベシティのプロフィール文の貼り付けでもOK'
+              : '10文字以上。リベシティのプロフィール文の貼り付けでもOK。企画案づくりの参考にします'}
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="interests" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            特に興味がある・好きなこと <span className="text-slate-400 text-xs">任意</span>
+          </label>
+          <textarea
+            id="interests"
+            value={profile.interests}
+            onChange={(e) => set({ interests: e.target.value })}
+            rows={3}
+            placeholder="例: カフェ巡り、読書、投資の話、ボードゲーム、朝活"
+            className="w-full px-4 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+          />
+          <p className="mt-1 text-xs text-slate-400">自己紹介に書いてあれば、繰り返さず空欄のままでOK</p>
+        </div>
+      </div>
+
+      <div className="mt-10 flex justify-end">
+        <button
+          onClick={onNext}
+          disabled={!canProceed}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg shadow-sky-600/20"
+        >
+          企画案を出してもらう
+          <ArrowRightIcon size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}

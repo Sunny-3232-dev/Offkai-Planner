@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+*.zip
+# 配布用の販促・体験会・記事素材（リポジトリには載せない）
+promo

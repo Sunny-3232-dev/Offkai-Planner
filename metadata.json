@@ -1,0 +1,9 @@
+{
+  "name": "オフ会プランナー",
+  "description": "はじめてのオフ会主催を、企画から告知まで背中を押すツール",
+  "version": "0.1.0",
+  "icon": "🎉",
+  "tags": ["event", "offkai", "community", "ai"],
+  "entrypoint": "index.html",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
