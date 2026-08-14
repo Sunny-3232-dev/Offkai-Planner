@@ -2,7 +2,7 @@ import React from 'react';
 import { SavedEvent } from '../types';
 import { APP_NAME, APP_TAGLINE, MAX_SAVED_EVENTS } from '../constants';
 import { formatDateJa } from '../utils/time';
-import { ArrowRightIcon, RefreshIcon, TrashIcon, UserIcon, LightbulbIcon, CalendarIcon, ClockIcon, FileTextIcon, ImageIcon, MessagePlusIcon, MegaphoneIcon } from './icons';
+import { ArrowRightIcon, RefreshIcon, TrashIcon, UserIcon, LightbulbIcon, CalendarIcon, ClockIcon, FileTextIcon, ImageIcon, MessagePlusIcon, MegaphoneIcon, CheckIcon } from './icons';
 import { EntakuProgress } from './Entaku';
 
 interface HubProps {
@@ -28,6 +28,20 @@ const FLOW = [
   { Icon: ImageIcon, title: 'アイコンと画像', desc: 'チャットアイコンと告知画像のプロンプト' },
   { Icon: MessagePlusIcon, title: 'チャットを立てる', desc: 'コピペするだけでオフ会チャットが完成' },
   { Icon: MegaphoneIcon, title: 'みんなに知らせる', desc: 'チャットURLを添えて支部チャット・つぶやきへ' },
+];
+
+/** 何をしてくれるツールなのかを3つで言い切る（LPと同じ内容・同じ順番） */
+const FEATURES = [
+  { Icon: LightbulbIcon, title: 'AIが企画を提案', desc: 'テーマを選ぶだけで、ぴったりの案が出てきます' },
+  { Icon: MessagePlusIcon, title: '告知文までおまかせ', desc: '案内文も、つぶやきも、AIが書きます' },
+  { Icon: CheckIcon, title: 'そのまま使える', desc: 'コピペしてリベシティに貼るだけで完成' },
+];
+
+/** 初主催でつまずきやすい3点に、機能で answer する */
+const WORRIES = [
+  { q: '何をテーマにすればいいか分からない', a: 'あなたの興味から、AIが具体的な企画案を並べます。ピンとくるものを選ぶだけ。' },
+  { q: '告知文を書くのが気が重い', a: '案内文もつぶやきも自動で作成。丁寧な標準版と、文体で遊んだ版の2つから選べます。' },
+  { q: '当日の進め方がイメージできない', a: '人数と時間から、シンプルな進行表を作ります。時間の調整も自由。' },
 ];
 
 function eventTitle(ev: SavedEvent): string {
@@ -117,6 +131,24 @@ export default function Hub({
           </div>
         )}
 
+        {/* 何ができるツールなのかを最初に3つで示す */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10 text-left">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="flex sm:flex-col items-center sm:items-start gap-3 bg-white/85 rounded-2xl border border-sky-100 p-4">
+              <f.Icon size={22} className="text-sky-600 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-slate-700">{f.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="font-hand text-xl sm:text-2xl text-slate-700">やることは、8つだけ。</h2>
+        <svg className="mx-auto mt-0.5 mb-4 text-sky-500/80" width="140" height="9" viewBox="0 0 150 10" fill="none" aria-hidden="true">
+          <path d="M4 6c34-4 72 3 142-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 text-left">
           {FLOW.map((f, i) => (
             <div key={f.title} className="card-hover bg-white/85 rounded-2xl border border-sky-100 p-3.5">
@@ -129,6 +161,22 @@ export default function Hub({
             </div>
           ))}
         </div>
+
+        {/* 初主催のつまずきポイントに、機能で答える */}
+        <h2 className="font-hand text-xl sm:text-2xl text-slate-700">「わたしにできるかな」を、なくします。</h2>
+        <svg className="mx-auto mt-0.5 mb-4 text-sky-500/80" width="190" height="9" viewBox="0 0 200 10" fill="none" aria-hidden="true">
+          <path d="M4 6c46-4 96 3 192-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        <div className="grid gap-2.5 mb-10 text-left">
+          {WORRIES.map((w) => (
+            <div key={w.q} className="bg-white/85 border border-sky-100 border-l-[3px] border-l-sky-500 rounded-r-2xl p-4">
+              <p className="text-sm font-bold text-slate-700">{w.q}</p>
+              <p className="text-xs text-slate-500 mt-1">{w.a}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="font-hand text-lg text-slate-500 mb-1">さあ、はじめよう。</p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           {hasProgress && (
@@ -150,7 +198,7 @@ export default function Hub({
                 : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-600/20'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
-            新しいオフ会を企画する
+            {hasProgress ? 'もう1つ立ち上げる' : 'オフ会を立ち上げる'}
             <ArrowRightIcon size={18} className={hasProgress ? undefined : 'text-amber-300'} />
           </button>
           {hasProgress && (
