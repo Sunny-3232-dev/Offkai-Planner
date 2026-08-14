@@ -86,17 +86,33 @@ export default function Hub({
         </p>
 
         {/* 主CTAはヒーロー直下にも置く。下まで読まないと始められないと、
-            読む前に離脱した人がそのまま帰ってしまうため */}
+            読む前に離脱した人がそのまま帰ってしまうため。
+            続きがある人でも「新しく立ち上げる」を選べるよう、両方出す */}
         <div className="mb-10">
-          <button
-            onClick={hasProgress ? onResume : onStart}
-            disabled={!hasProgress && !canCreate}
-            title={hasProgress || canCreate ? undefined : `保存できるオフ会は最大${MAX_SAVED_EVENTS}件です。終了したオフ会を削除してください`}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-sky-600 text-white font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {hasProgress ? '続きから再開する' : 'オフ会を立ち上げる'}
-            <ArrowRightIcon size={18} className="text-amber-300" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {hasProgress && (
+              <button
+                onClick={onResume}
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-sky-600 text-white font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
+              >
+                続きから再開する
+                <ArrowRightIcon size={18} className="text-amber-300" />
+              </button>
+            )}
+            <button
+              onClick={onStart}
+              disabled={!canCreate}
+              title={canCreate ? undefined : `保存できるオフ会は最大${MAX_SAVED_EVENTS}件です。終了したオフ会を削除してください`}
+              className={`inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                hasProgress
+                  ? 'bg-white/85 border border-sky-200 text-slate-600 hover:bg-white'
+                  : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-600/20'
+              }`}
+            >
+              {hasProgress ? 'もう1つ立ち上げる' : 'オフ会を立ち上げる'}
+              <ArrowRightIcon size={18} className={hasProgress ? undefined : 'text-amber-300'} />
+            </button>
+          </div>
           <p className="mt-2.5 text-xs text-slate-400">登録不要・すぐに始められます</p>
         </div>
 
@@ -216,15 +232,6 @@ export default function Hub({
             {hasProgress ? 'もう1つ立ち上げる' : 'オフ会を立ち上げる'}
             <ArrowRightIcon size={18} className={hasProgress ? undefined : 'text-amber-300'} />
           </button>
-          {hasProgress && (
-            <button
-              onClick={onReset}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/85 border border-sky-200 text-slate-500 text-sm font-medium hover:bg-white transition-colors"
-            >
-              <RefreshIcon size={15} />
-              すべて初期化
-            </button>
-          )}
         </div>
 
         <p className="mt-6 text-xs text-slate-400">
@@ -250,6 +257,17 @@ export default function Hub({
               }}
             />
           </label>
+          {/* 全消しは「始める」ボタンの隣に置くと押し間違いが怖いので、
+              バックアップ操作と同じ「データの管理」の並びに移した */}
+          {hasProgress && (
+            <button
+              onClick={onReset}
+              className="inline-flex items-center gap-1 text-xs text-slate-400 underline underline-offset-2 hover:text-red-500 transition-colors"
+            >
+              <RefreshIcon size={12} />
+              すべて初期化
+            </button>
+          )}
         </div>
         <p className="mt-1.5 text-[11px] text-slate-400">
           ブラウザの変更・キャッシュ削除でデータは消えます。大事なオフ会はバックアップを保存しておいてください
