@@ -178,7 +178,7 @@ export default function ImagePromptStep({
   return (
     <div className="max-w-2xl mx-auto py-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-        <h2 className="text-2xl font-bold text-slate-800">アイコンと画像をつくりましょう</h2>
+        <h2 className="text-2xl font-bold text-slate-800">オフ会の画像を用意しましょう</h2>
         <AiLauncherLinks />
       </div>
       <p className="text-sm text-slate-500 mb-2">

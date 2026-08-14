@@ -1,25 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Yomogi&family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* 丸ゴシックを基本にして、書類のような硬さを出さない。
-     はじめてオフ会を主催する人の背中を押すツールなので、文字から力を抜く */
-  --font-sans: "Zen Maru Gothic", "Manrope", "Noto Sans JP", "Hiragino Sans", sans-serif;
-}
-
-/* 見出しやキャッチに使う手書きフォント（多用しない。1画面に1〜2箇所まで） */
-@utility font-hand {
-  font-family: 'Yomogi', 'Zen Maru Gothic', cursive;
-  font-weight: 400;
-}
-
-/* 紙の地色＋ごく薄いノイズ。真っ白の面をなくして、印刷物のような温度を出す */
-@utility paper-bg {
-  background-color: #F7F6F2;
-  background-image:
-    radial-gradient(circle at 18% 12%, rgba(37, 99, 235, 0.05), transparent 42%),
-    radial-gradient(circle at 86% 84%, rgba(250, 204, 21, 0.07), transparent 45%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+  --font-sans: "Manrope", "Noto Sans JP", "Hiragino Sans", sans-serif;
 }
 
 /* ── Custom Utilities (Tailwind v4) ── */
@@ -77,4 +60,30 @@
     fill: #fef3c7;
     stroke: #f59e0b;
   }
+}
+
+@utility hub-hero-orb-1 {
+  position: absolute;
+  top: 80px;
+  left: 40px;
+  width: 256px;
+  height: 256px;
+  background: #0ea5e9;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+@utility hub-hero-orb-2 {
+  position: absolute;
+  bottom: 80px;
+  right: 40px;
+  width: 384px;
+  height: 384px;
+  background: #fde68a;
+  border-radius: 50%;
+  filter: blur(150px);
+  opacity: 0.25;
+  pointer-events: none;
 }
