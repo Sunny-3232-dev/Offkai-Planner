@@ -49,16 +49,26 @@ export default function Hub({
 }: HubProps) {
   return (
     <div className="relative min-h-[70vh] flex flex-col items-center justify-center py-12 px-4">
-      <div className="hub-hero-orb-1" aria-hidden="true" />
-      <div className="hub-hero-orb-2" aria-hidden="true" />
-
       <div className="relative z-10 text-center max-w-2xl animate-fade-in">
-        <div className="flex justify-center mb-4" aria-hidden="true"><EntakuProgress currentIdx={8} size={84} /></div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">{APP_NAME}</h1>
-        <p className="text-slate-600 mb-2">{APP_TAGLINE}</p>
+        <div className="flex justify-center mb-3" aria-hidden="true"><EntakuProgress currentIdx={8} size={76} /></div>
+
+        {/* サービス名は小さく添える程度にして、主役はキャッチにする */}
+        <p className="font-hand text-sm sm:text-base tracking-[0.22em] text-slate-600">{APP_NAME}</p>
+        <svg className="mx-auto mt-0.5 text-sky-500/80" width="172" height="11" viewBox="0 0 186 12" fill="none" aria-hidden="true">
+          <path d="M3 7C40 2 62 9 96 6c30-3 52 3 87-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path d="M92 6c3-3 7-1 5 2s-8 1-5-2z" stroke="currentColor" strokeWidth="1.6" fill="none" />
+        </svg>
+
+        <h1 className="font-hand text-4xl sm:text-5xl leading-[1.35] mt-6 text-slate-800">
+          じゃあ、<span className="block text-sky-700">やってみようか。</span>
+        </h1>
+        <svg className="mx-auto mt-1 max-w-[85%] text-sky-500/80" width="300" height="15" viewBox="0 0 330 16" fill="none" aria-hidden="true">
+          <path d="M6 11C74 4 138 12 210 6c40-3 76 4 114 1" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+
+        <p className="text-slate-600 mt-5 mb-1">{APP_TAGLINE}</p>
         <p className="text-sm text-slate-500 mb-8">
-          「オフ会を開いてみたいけど、何から始めればいいかわからない」<br />
-          そんなあなたの初主催を、企画から告知まで一緒に組み立てます。
+          「何から始めればいいかわからない」を、8つのステップに分けました。
         </p>
 
         {/* 保存済みのオフ会 */}
@@ -109,12 +119,12 @@ export default function Hub({
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 text-left">
           {FLOW.map((f, i) => (
-            <div key={f.title} className="card-hover bg-white rounded-xl border border-slate-200 p-3">
+            <div key={f.title} className="card-hover bg-white/85 rounded-2xl border border-sky-100 p-3.5">
               <div className="flex items-center gap-1.5 mb-1">
                 <f.Icon size={16} className="text-sky-600" />
-                <span className="text-[11px] text-slate-400 font-semibold">STEP {i + 1}</span>
+                <span className="text-[11px] text-sky-600/70 font-semibold">STEP {i + 1}</span>
               </div>
-              <p className="text-sm font-semibold text-slate-700">{f.title}</p>
+              <p className="text-sm font-bold text-slate-700">{f.title}</p>
               <p className="text-xs text-slate-500 mt-0.5">{f.desc}</p>
             </div>
           ))}
@@ -124,29 +134,29 @@ export default function Hub({
           {hasProgress && (
             <button
               onClick={onResume}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
             >
               続きから再開する
-              <ArrowRightIcon size={18} />
+              <ArrowRightIcon size={18} className="text-amber-300" />
             </button>
           )}
           <button
             onClick={onStart}
             disabled={!canCreate}
             title={canCreate ? undefined : `保存できるオフ会は最大${MAX_SAVED_EVENTS}件です。終了したオフ会を削除してください`}
-            className={`inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold transition-colors ${
+            className={`inline-flex items-center gap-2 px-8 py-3 rounded-full font-bold transition-colors ${
               hasProgress
-                ? 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'
+                ? 'bg-white/85 border border-sky-200 text-slate-600 hover:bg-white'
                 : 'bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-600/20'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             新しいオフ会を企画する
-            <ArrowRightIcon size={18} />
+            <ArrowRightIcon size={18} className={hasProgress ? undefined : 'text-amber-300'} />
           </button>
           {hasProgress && (
             <button
               onClick={onReset}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border border-slate-300 text-slate-500 text-sm font-medium hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/85 border border-sky-200 text-slate-500 text-sm font-medium hover:bg-white transition-colors"
             >
               <RefreshIcon size={15} />
               すべて初期化
