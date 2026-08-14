@@ -66,7 +66,7 @@ export default function AnnouncementStep({
 
   return (
     <div className="max-w-2xl mx-auto py-8 animate-fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">詳細（公開情報）</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">みんなへの案内文ができました</h2>
       <p className="text-sm text-slate-500 mb-6">
         オフ会チャット作成フォームの「詳細（公開情報）」欄にそのまま貼れる文章を作りました。
         自分の言葉に直したいところは自由に編集してください。

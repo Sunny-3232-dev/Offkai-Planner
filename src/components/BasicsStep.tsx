@@ -80,7 +80,7 @@ export default function BasicsStep({
 
   return (
     <div className="max-w-2xl mx-auto py-8 animate-fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">オフ会の基本情報を決めましょう</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">いつ、どこでやりましょうか</h2>
       <p className="text-sm text-slate-500 mb-8">
         {idea ? `企画「${idea.title}」をもとに決めていきます。` : ''}
         日時と場所はあなたにしか決められない大事なポイントです。

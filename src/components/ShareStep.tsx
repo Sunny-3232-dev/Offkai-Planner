@@ -174,7 +174,7 @@ export default function ShareStep({
 
   return (
     <div className="max-w-2xl mx-auto py-8 animate-fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">告知しましょう</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">みんなに知らせましょう</h2>
       <p className="text-sm text-slate-500 mb-6">
         支部チャットとつぶやきで、作成したオフ会チャットへの参加を呼びかけましょう。
       </p>
