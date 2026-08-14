@@ -20,14 +20,14 @@ interface HubProps {
 }
 
 const FLOW = [
-  { Icon: UserIcon, title: 'プロフィール', desc: 'あなたの興味と開催したい場所を入力' },
-  { Icon: LightbulbIcon, title: '企画案', desc: 'お金の5つのテーマ（貯める/稼ぐ/守る/増やす/使う）＋その他で提案。ピン留めして選べる' },
-  { Icon: CalendarIcon, title: '基本情報', desc: 'タイトル・日時・場所・定員' },
-  { Icon: ClockIcon, title: '進行イメージ', desc: '当日の大まかな流れ' },
-  { Icon: FileTextIcon, title: '詳細情報', desc: 'そのまま貼れる公開情報の文章' },
-  { Icon: ImageIcon, title: '画像', desc: 'アイコンとサムネのプロンプト' },
-  { Icon: MessagePlusIcon, title: 'チャット作成', desc: '転記材料をコピーしてチャットを立ち上げる' },
-  { Icon: MegaphoneIcon, title: '告知', desc: 'チャットURLを添えて支部チャット・つぶやきで広める' },
+  { Icon: UserIcon, title: 'あなたのこと', desc: '興味のあることと、開きたい場所を書くだけ' },
+  { Icon: LightbulbIcon, title: 'どんな会にする？', desc: 'お金の5つのテーマ（貯める/稼ぐ/守る/増やす/使う）＋その他でAIが提案。気になる案はピン留め' },
+  { Icon: CalendarIcon, title: 'いつ・どこで？', desc: 'タイトル・日時・場所・定員を決める' },
+  { Icon: ClockIcon, title: '当日の流れ', desc: '何時に何をするか、ざっくり組み立て' },
+  { Icon: FileTextIcon, title: 'みんなへの案内', desc: 'そのまま貼れる案内文ができる' },
+  { Icon: ImageIcon, title: 'アイコンと画像', desc: 'チャットアイコンと告知画像のプロンプト' },
+  { Icon: MessagePlusIcon, title: 'チャットを立てる', desc: 'コピペするだけでオフ会チャットが完成' },
+  { Icon: MegaphoneIcon, title: 'みんなに知らせる', desc: 'チャットURLを添えて支部チャット・つぶやきへ' },
 ];
 
 function eventTitle(ev: SavedEvent): string {

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オフ会プランナー｜じゃあ、やってみようか。</title>
+<meta name="description" content="はじめてのオフ会主催を、企画から告知までAIがサポート。テーマ決め・進行表・案内文・告知文まで、コピペで使える形で用意します。無料・登録不要。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F6F2;        /* 紙の地色 */
+    --ink:#1B3A6B;          /* 濃紺（本文） */
+    --ink-soft:#5A7196;     /* 補足テキスト */
+    --blue:#2563EB;         /* CTA・手描き線 */
+    --blue-deep:#1D4ED8;
+    --blue-pale:#DCE8FB;
+    --accent:#FACC15;       /* 差し色（矢印だけ） */
+    --card:#FFFFFF;
+    --radius:14px;
+    --maxw:720px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background-color:var(--paper);
+    /* 紙の質感: ごく薄いノイズを重ねる */
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(37,99,235,.045), transparent 42%),
+      radial-gradient(circle at 85% 82%, rgba(37,99,235,.04), transparent 45%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+    color:var(--ink);
+    font-family:'Zen Maru Gothic', system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    line-height:1.9;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .center{text-align:center}
+
+  /* ---- 手描きの下線・囲み ---- */
+  .sketch{display:block;margin:2px auto 0;color:var(--blue);opacity:.85}
+  .brand{
+    font-family:'Yomogi',cursive;
+    font-size:clamp(15px,3.4vw,17px);
+    letter-spacing:.22em;
+    color:var(--ink);
+    margin:0;
+  }
+
+  /* ---- ヒーロー ---- */
+  header{padding:clamp(48px,9vw,84px) 0 clamp(28px,5vw,44px)}
+  h1{
+    font-family:'Yomogi',cursive;
+    font-weight:400;
+    font-size:clamp(38px,10.5vw,74px);
+    line-height:1.32;
+    margin:clamp(24px,5vw,40px) 0 0;
+    color:var(--ink);
+    letter-spacing:.01em;
+  }
+  h1 .l2{display:block;color:var(--blue-deep)}
+  .lead{
+    font-size:clamp(14px,3.4vw,17px);
+    color:var(--ink-soft);
+    margin:20px 0 0;
+  }
+  .lead u{text-decoration:none;border-bottom:2px solid var(--blue);padding-bottom:2px}
+
+  /* ---- CTA ---- */
+  .cta{
+    display:inline-flex;align-items:center;gap:14px;
+    background:var(--blue);color:#fff;
+    font-family:'Zen Maru Gothic',sans-serif;font-weight:700;
+    font-size:clamp(16px,3.8vw,19px);
+    letter-spacing:.06em;
+    padding:18px 40px;border-radius:999px;
+    text-decoration:none;
+    box-shadow:0 8px 20px rgba(37,99,235,.26);
+    transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+  }
+  .cta:hover{background:var(--blue-deep);transform:translateY(-2px);box-shadow:0 12px 26px rgba(37,99,235,.32)}
+  .cta:active{transform:translateY(0)}
+  .cta .arrow{color:var(--accent);font-size:1.15em;line-height:1;transition:transform .16s ease}
+  .cta:hover .arrow{transform:translateX(4px)}
+  .cta-note{font-size:13px;color:var(--ink-soft);margin:14px 0 0}
+  .cta-wrap{position:relative;display:inline-block;margin-top:clamp(28px,5vw,40px)}
+  /* ボタン脇のキラッと線 */
+  .spark{position:absolute;top:-8px;color:var(--blue);opacity:.75}
+  .spark.l{left:-26px}
+  .spark.r{right:-26px;transform:scaleX(-1)}
+
+  /* ---- 特徴3つ ---- */
+  section{padding:clamp(40px,7vw,64px) 0}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+  .card{
+    background:var(--card);border:1px solid #E8EDF6;border-radius:var(--radius);
+    padding:26px 16px;text-align:center;
+  }
+  .card .ico{color:var(--blue);margin-bottom:10px}
+  .card h3{font-size:clamp(14px,3.2vw,16px);font-weight:700;margin:0 0 8px;color:var(--ink)}
+  .card p{font-size:13px;color:var(--ink-soft);margin:0;line-height:1.75}
+
+  /* ---- ステップ ---- */
+  .sec-title{
+    font-family:'Yomogi',cursive;font-size:clamp(21px,5vw,28px);
+    margin:0;color:var(--ink);font-weight:400;
+  }
+  .steps{list-style:none;padding:0;margin:32px 0 0;display:grid;gap:14px}
+  .step{
+    display:flex;align-items:flex-start;gap:16px;
+    background:var(--card);border:1px solid #E8EDF6;border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .step .num{
+    flex:none;width:30px;height:30px;border-radius:50%;
+    background:var(--blue-pale);color:var(--blue-deep);
+    font-weight:700;font-size:14px;
+    display:grid;place-items:center;margin-top:2px;
+  }
+  .step b{display:block;font-size:15px;color:var(--ink);font-weight:700}
+  .step span{font-size:13px;color:var(--ink-soft)}
+
+  /* ---- 不安に応えるブロック ---- */
+  .worries{display:grid;gap:12px;margin-top:28px}
+  .worry{
+    background:var(--card);border:1px solid #E8EDF6;border-left:3px solid var(--blue);
+    border-radius:0 var(--radius) var(--radius) 0;padding:16px 20px;
+  }
+  .worry b{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}
+  .worry span{font-size:13px;color:var(--ink-soft)}
+
+  /* ---- フッターCTA ---- */
+  .closing{padding-bottom:clamp(56px,10vw,96px)}
+  .closing .line{margin-bottom:6px}
+  .handnote{font-family:'Yomogi',cursive;font-size:clamp(15px,3.6vw,18px);color:var(--ink-soft);margin:0 0 4px}
+  footer{padding:0 0 40px;text-align:center;font-size:12px;color:var(--ink-soft)}
+  footer a{color:var(--ink-soft)}
+
+  @media (max-width:560px){
+    .cards{grid-template-columns:1fr;gap:12px}
+    .card{display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px}
+    .card .ico{margin:0;flex:none}
+    .card h3{margin:0 0 2px}
+    .spark{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap center">
+  <p class="brand">オフ会プランナー</p>
+  <!-- ブランド名の下の手描き波線 -->
+  <svg class="sketch" width="186" height="12" viewBox="0 0 186 12" fill="none" aria-hidden="true">
+    <path d="M3 7C40 2 62 9 96 6c30-3 52 3 87-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M92 6c3-3 7-1 5 2s-8 1-5-2z" stroke="currentColor" stroke-width="1.6" fill="none"/>
+  </svg>
+
+  <h1>じゃあ、<span class="l2">やってみようか。</span></h1>
+  <!-- 見出しを支える手描きの下線 -->
+  <svg class="sketch" width="330" height="16" viewBox="0 0 330 16" fill="none" aria-hidden="true" style="max-width:86%">
+    <path d="M6 11C74 4 138 12 210 6c40-3 76 4 114 1" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+
+  <p class="lead">企画から告知まで、<u>AIがやさしくサポート</u>。</p>
+
+  <div class="cta-wrap">
+    <svg class="spark l" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 14L1 17M8 11L6 6M13 12l4-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <a class="cta" href="https://aistudio.google.com/apps/e3384c8a-b681-4f8b-9e52-992da44c9c36">
+      無料でつくってみる <span class="arrow" aria-hidden="true">→</span>
+    </a>
+    <svg class="spark r" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 14L1 17M8 11L6 6M13 12l4-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <p class="cta-note">登録不要・すぐに始められます</p>
+  </div>
+</header>
+
+<section class="wrap">
+  <div class="cards">
+    <div class="card">
+      <svg class="ico" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>
+      </svg>
+      <div>
+        <h3>AIが企画を提案</h3>
+        <p>テーマを選ぶだけで、ぴったりの案が出てきます</p>
+      </div>
+    </div>
+    <div class="card">
+      <svg class="ico" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/>
+      </svg>
+      <div>
+        <h3>告知文までおまかせ</h3>
+        <p>案内文も、つぶやきも、AIが書きます</p>
+      </div>
+    </div>
+    <div class="card">
+      <svg class="ico" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 6 9 17l-5-5"/>
+      </svg>
+      <div>
+        <h3>そのまま使える</h3>
+        <p>コピペしてリベシティに貼るだけで完成</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap center">
+  <h2 class="sec-title">やることは、8つだけ。</h2>
+  <svg class="sketch" width="150" height="10" viewBox="0 0 150 10" fill="none" aria-hidden="true">
+    <path d="M4 6c34-4 72 3 142-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+
+  <ol class="steps" style="text-align:left">
+    <li class="step"><span class="num">1</span><div><b>あなたのこと</b><span>興味のあることと、開きたい場所を書くだけ</span></div></li>
+    <li class="step"><span class="num">2</span><div><b>どんな会にする？</b><span>お金の5つのテーマからAIが案を出します</span></div></li>
+    <li class="step"><span class="num">3</span><div><b>いつ・どこで？</b><span>日時と場所、定員を決めます</span></div></li>
+    <li class="step"><span class="num">4</span><div><b>当日の流れ</b><span>何時に何をするか、ざっくり組み立て</span></div></li>
+    <li class="step"><span class="num">5</span><div><b>みんなへの案内</b><span>そのまま貼れる案内文ができます</span></div></li>
+    <li class="step"><span class="num">6</span><div><b>アイコンと画像</b><span>チャットアイコンと告知画像のプロンプト</span></div></li>
+    <li class="step"><span class="num">7</span><div><b>チャットを立てる</b><span>コピペするだけでオフ会チャットが完成</span></div></li>
+    <li class="step"><span class="num">8</span><div><b>みんなに知らせる</b><span>支部チャットとつぶやきで広めます</span></div></li>
+  </ol>
+</section>
+
+<section class="wrap center">
+  <h2 class="sec-title">「わたしにできるかな」を、なくします。</h2>
+  <svg class="sketch" width="200" height="10" viewBox="0 0 200 10" fill="none" aria-hidden="true">
+    <path d="M4 6c46-4 96 3 192-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+
+  <div class="worries" style="text-align:left">
+    <div class="worry">
+      <b>何をテーマにすればいいか分からない</b>
+      <span>あなたの興味から、AIが具体的な企画案を並べます。ピンとくるものを選ぶだけ。</span>
+    </div>
+    <div class="worry">
+      <b>告知文を書くのが気が重い</b>
+      <span>案内文もつぶやきも自動で作成。丁寧な標準版と、文体で遊んだ版の2つから選べます。</span>
+    </div>
+    <div class="worry">
+      <b>当日の進め方がイメージできない</b>
+      <span>人数と時間から、休憩なしのシンプルな進行表を作ります。時間の調整も自由。</span>
+    </div>
+  </div>
+</section>
+
+<section class="wrap center closing">
+  <p class="handnote">さあ、はじめよう。</p>
+  <svg class="sketch line" width="260" height="14" viewBox="0 0 260 14" fill="none" aria-hidden="true" style="max-width:80%">
+    <path d="M5 9C64 3 122 11 186 6c26-2 48 3 68 1" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>
+
+  <div class="cta-wrap">
+    <a class="cta" href="https://aistudio.google.com/apps/e3384c8a-b681-4f8b-9e52-992da44c9c36">
+      無料でつくってみる <span class="arrow" aria-hidden="true">→</span>
+    </a>
+    <p class="cta-note">入力した内容はブラウザの中にだけ保存されます</p>
+  </div>
+</section>
+
+<footer class="wrap">
+  <p>オフ会プランナー ／ リベシティ会員のための、はじめてのオフ会づくり</p>
+</footer>
+
+</body>
+</html>

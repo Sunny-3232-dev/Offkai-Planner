@@ -7,15 +7,17 @@ interface StepDef {
   label: string;
 }
 
+// ラベルは「何をする画面か」を話し言葉で書く。
+// 「基本情報」「詳細情報」のような書類的な名前は、初めて主催する人に堅苦しい印象を与えるため使わない。
 const STEPS: StepDef[] = [
-  { step: AppStep.PROFILE, label: 'プロフィール' },
-  { step: AppStep.IDEAS, label: '企画案' },
-  { step: AppStep.BASICS, label: '基本情報' },
-  { step: AppStep.SCHEDULE, label: '進行イメージ' },
-  { step: AppStep.ANNOUNCEMENT, label: '詳細情報' },
-  { step: AppStep.IMAGE_PROMPTS, label: '画像' },
-  { step: AppStep.CHAT_SETUP, label: 'チャット作成' },
-  { step: AppStep.SHARE, label: '告知' },
+  { step: AppStep.PROFILE, label: 'あなたのこと' },
+  { step: AppStep.IDEAS, label: 'どんな会にする？' },
+  { step: AppStep.BASICS, label: 'いつ・どこで？' },
+  { step: AppStep.SCHEDULE, label: '当日の流れ' },
+  { step: AppStep.ANNOUNCEMENT, label: 'みんなへの案内' },
+  { step: AppStep.IMAGE_PROMPTS, label: 'アイコンと画像' },
+  { step: AppStep.CHAT_SETUP, label: 'チャットを立てる' },
+  { step: AppStep.SHARE, label: 'みんなに知らせる' },
 ];
 
 const STEP_LABELS = STEPS.map((s) => s.label);
