@@ -81,9 +81,24 @@ export default function Hub({
         </svg>
 
         <p className="text-slate-600 mt-5 mb-1">{APP_TAGLINE}</p>
-        <p className="text-sm text-slate-500 mb-8">
+        <p className="text-sm text-slate-500 mb-6">
           「何から始めればいいかわからない」を、8つのステップに分けました。
         </p>
+
+        {/* 主CTAはヒーロー直下にも置く。下まで読まないと始められないと、
+            読む前に離脱した人がそのまま帰ってしまうため */}
+        <div className="mb-10">
+          <button
+            onClick={hasProgress ? onResume : onStart}
+            disabled={!hasProgress && !canCreate}
+            title={hasProgress || canCreate ? undefined : `保存できるオフ会は最大${MAX_SAVED_EVENTS}件です。終了したオフ会を削除してください`}
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-sky-600 text-white font-bold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {hasProgress ? '続きから再開する' : 'オフ会を立ち上げる'}
+            <ArrowRightIcon size={18} className="text-amber-300" />
+          </button>
+          <p className="mt-2.5 text-xs text-slate-400">登録不要・すぐに始められます</p>
+        </div>
 
         {/* 保存済みのオフ会 */}
         {events.length > 0 && (
