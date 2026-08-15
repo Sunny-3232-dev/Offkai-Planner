@@ -249,7 +249,7 @@ export default function BasicsStep({
               </div>
               <p className="mt-2 text-[11px] text-amber-700 flex items-start gap-1">
                 <AlertIcon size={13} className="shrink-0 mt-0.5" />
-                <span>公式オフィス開催は、チャット作成前に必ず<b>オフィスの予約</b>をお取りください（リベシティのオフ会作成フォームにも同じ注意があります）</span>
+                <span>公式オフィス開催は、チャットを立てる前に必ず<b>オフィスの予約</b>をお取りください（リベシティのオフ会作成フォームにも同じ注意があります）</span>
               </p>
             </div>
           )}
@@ -364,14 +364,14 @@ export default function BasicsStep({
           className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors"
         >
           <ChevronLeftIcon size={16} />
-          企画案に戻る
+          戻る
         </button>
         <button
           onClick={onNext}
           disabled={!canProceed}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg shadow-sky-600/20"
         >
-          進行イメージを作る
+          当日の流れを作る
           <ArrowRightIcon size={18} />
         </button>
       </div>

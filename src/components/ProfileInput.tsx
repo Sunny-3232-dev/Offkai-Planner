@@ -183,7 +183,7 @@ export default function ProfileInput({ profile, onChange, onNext }: ProfileInput
           disabled={!canProceed}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg shadow-sky-600/20"
         >
-          企画案を出してもらう
+          どんな会にするか、案を出してもらう
           <ArrowRightIcon size={18} />
         </button>
       </div>

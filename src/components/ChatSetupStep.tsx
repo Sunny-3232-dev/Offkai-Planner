@@ -219,7 +219,7 @@ export default function ChatSetupStep({
           )}
           <CopyField label="詳細（公開）情報" value={announcement} longText />
           <p className="mt-1.5 text-[11px] text-slate-400 px-1">
-            💡 詳細情報の右側あたりに画像を1枚添えると、パッと見て楽しそうなオフ会に見えますよ
+            💡 「詳細（公開情報）」の右側あたりに画像を1枚添えると、パッと見て楽しそうなオフ会に見えますよ
           </p>
           {playfulAvailable && (
             <p className="mt-1 text-[11px] text-slate-400 px-1">
@@ -257,13 +257,13 @@ export default function ChatSetupStep({
           className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors"
         >
           <ChevronLeftIcon size={16} />
-          画像に戻る
+          戻る
         </button>
         <button
           onClick={onNext}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
         >
-          告知へ進む
+          みんなに知らせる
           <ArrowRightIcon size={18} />
         </button>
       </div>

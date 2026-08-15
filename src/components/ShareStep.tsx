@@ -184,7 +184,7 @@ export default function ShareStep({
         onChange={onChangeLane}
         styleName={playfulLabel}
         playfulEnabled={playfulAvailable}
-        hint="ここでの選択は告知文だけに効きます。詳細（公開情報）やチャット作成の版は変わりません"
+        hint="ここでの選択は告知文だけに効きます。「みんなへの案内」や「チャットを立てる」で選んだ版は変わりません"
       />
 
       {playful && (
@@ -395,7 +395,7 @@ export default function ShareStep({
           className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors"
         >
           <ChevronLeftIcon size={16} />
-          チャット作成に戻る
+          戻る
         </button>
         <button
           onClick={onFinish}

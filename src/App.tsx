@@ -787,7 +787,7 @@ function AppContent() {
     if (!ensureApiKey() || !concept || !activeIdea) return;
     const hasFeedback = !!opts?.feedback && opts.feedback.trim().length > 0;
     if (opts?.confirm && schedule.length > 0 && !hasFeedback) {
-      const ok = await confirmDialog('進行イメージをAIで作り直すと、いまの編集内容は上書きされます。よろしいですか？');
+      const ok = await confirmDialog('当日の流れをAIで作り直すと、いまの編集内容は上書きされます。よろしいですか？');
       if (!ok) return;
     }
     setLoading(true);
@@ -809,7 +809,7 @@ function AppContent() {
       }
       setScheduleSourceKey(basicsConceptFingerprint(basics, concept));
     } catch (e: any) {
-      setError(e?.message || '進行イメージの生成に失敗しました。');
+      setError(e?.message || '当日の流れの生成に失敗しました。');
     } finally {
       setLoading(false);
     }
@@ -1149,7 +1149,7 @@ function AppContent() {
                 schedule.length > 0 || !!announcementStandard || !!iconPrompt || !!thumbnailAssets || !!shareTextsStandard;
               if (isIdeaChange && hasDownstream) {
                 const ok = await confirmDialog(
-                  '企画を変更すると、進行イメージ・詳細情報・画像・告知文をすべて作り直すことになります。よろしいですか？'
+                  '企画を変更すると、当日の流れ・みんなへの案内・アイコンと画像・告知文をすべて作り直すことになります。よろしいですか？'
                 );
                 if (!ok) return;
               }
@@ -1268,11 +1268,11 @@ function AppContent() {
                 !announcementSourceKey.startsWith(`${currentKey}|`);
               if (scheduleStale || imagesStale || announcementStale) {
                 const parts = [
-                  scheduleStale && '進行イメージ',
-                  announcementStale && '詳細（公開情報）',
-                  imagesStale && '画像',
+                  scheduleStale && '当日の流れ',
+                  announcementStale && 'みんなへの案内',
+                  imagesStale && 'アイコンと画像',
                 ].filter(Boolean);
-                const ok = await confirmDialog(`基本情報が変更されています。${parts.join('・')}を作り直しますか？`);
+                const ok = await confirmDialog(`「いつ・どこで？」の内容が変更されています。${parts.join('・')}を作り直しますか？`);
                 if (ok) {
                   if (scheduleStale) runGenerateSchedule();
                   // 詳細はバックグラウンドで作り直す（進行イメージの生成と並列）
@@ -1326,7 +1326,7 @@ function AppContent() {
                   announcementSourceKey !== '' && currentKey !== announcementSourceKey && !isLegacyMatch;
                 if (stale) {
                   const ok = await confirmDialog(
-                    '基本情報が変更されています。詳細（公開情報）を作り直しますか？'
+                    '「いつ・どこで？」の内容が変更されています。みんなへの案内を作り直しますか？'
                   );
                   if (ok) {
                     runGenerateAnnouncement('', { skipConfirm: true });

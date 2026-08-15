@@ -439,13 +439,13 @@ export default function ImagePromptStep({
           className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors"
         >
           <ChevronLeftIcon size={16} />
-          詳細情報に戻る
+          戻る
         </button>
         <button
           onClick={onNext}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors shadow-lg shadow-sky-600/20"
         >
-          オフ会チャットを立ち上げる
+          チャットを立てる
           <ArrowRightIcon size={18} />
         </button>
       </div>

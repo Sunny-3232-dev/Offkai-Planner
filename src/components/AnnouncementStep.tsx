@@ -77,7 +77,7 @@ export default function AnnouncementStep({
         lane={styleLane}
         onChange={onChangeLane}
         styleName={playfulLabel}
-        hint="2つの版はどちらも残ります。どちらを使うかはチャット作成・告知でも別々に選べます"
+        hint="2つの版はどちらも残ります。どちらを使うかは「チャットを立てる」「みんなに知らせる」でも別々に選べます"
       />
 
       {playful && (
@@ -123,13 +123,13 @@ export default function AnnouncementStep({
           {timetableSection && (
             <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 mb-4">
               <p className="text-xs font-semibold text-sky-700 mb-1.5">
-                進行イメージから自動で追記されます（チャット作成時のコピーに含まれます）
+                「当日の流れ」から自動で追記されます（チャットを立てるときのコピーに含まれます）
               </p>
               <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
                 {timetableSection}
               </p>
               <p className="mt-1.5 text-[11px] text-sky-600/70">
-                内容を変えたい場合は進行イメージのステップで編集してください。載せたくない場合も進行イメージのステップでOFFにできます
+                内容を変えたい場合は「当日の流れ」で編集してください。載せたくない場合も「当日の流れ」でOFFにできます
               </p>
             </div>
           )}
@@ -214,14 +214,14 @@ export default function AnnouncementStep({
           className="inline-flex items-center gap-1 px-5 py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition-colors"
         >
           <ChevronLeftIcon size={16} />
-          進行イメージに戻る
+          戻る
         </button>
         <button
           onClick={onNext}
           disabled={!announcement}
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg shadow-sky-600/20"
         >
-          画像を用意する
+          アイコンと画像を用意する
           <ArrowRightIcon size={18} />
         </button>
       </div>
