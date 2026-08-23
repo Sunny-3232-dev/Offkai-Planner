@@ -77,7 +77,7 @@ export default function AnnouncementStep({
         lane={styleLane}
         onChange={onChangeLane}
         styleName={playfulLabel}
-        hint="2つの版はどちらも残ります。どちらを使うかは「チャットを立てる」「みんなに知らせる」でも別々に選べます"
+        hint="2つの版はどちらも残ります。ここで選んだ版が「チャットを立てる」「みんなに知らせる」にも引き継がれます（あとから個別に変えられます）"
       />
 
       {playful && (

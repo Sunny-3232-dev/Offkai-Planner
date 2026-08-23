@@ -273,6 +273,21 @@ function AppContent() {
   const [announcementLane, setAnnouncementLane] = useState<StyleLane>(() => loadLane('announcementLane'));
   const [chatSetupLane, setChatSetupLane] = useState<StyleLane>(() => loadLane('chatSetupLane'));
   const [shareLane, setShareLane] = useState<StyleLane>(() => loadLane('shareLane'));
+
+  /** 「みんなへの案内」で選んだ版を、下流（チャットを立てる・みんなに知らせる）の初期選択にも配る。
+   *  遊び心版を作ったのに次の画面が標準版で開くと、選び直しを毎回強いることになるため。
+   *  各ステップの切り替えは残るので、あとから個別に変えられる。 */
+  const applyAnnouncementLane = useCallback((lane: StyleLane) => {
+    setAnnouncementLane(lane);
+    setChatSetupLane(lane);
+    setShareLane(lane);
+  }, []);
+
+  /** チャットに貼る版を変えたら、その後の告知文も同じ版で始める（公開物の文体を食い違わせないため） */
+  const applyChatSetupLane = useCallback((lane: StyleLane) => {
+    setChatSetupLane(lane);
+    setShareLane(lane);
+  }, []);
   // 遊び心版を作るときに選ぶ文体（オフ会ごとに1つ。ピルの選択状態）
   const [playfulStylePreset, setPlayfulStylePreset] = useState<string>(
     () => loadFromStorage<string>('playfulStylePreset') || ''
@@ -927,14 +942,14 @@ function AppContent() {
       setAnnouncementPlayful(result.body);
       setAnnouncementPlayfulStyle(playfulStyleLabel(preset, custom));
       setAnnouncementPlayfulFeedbackHistory([]);
-      setAnnouncementLane('playful');
+      applyAnnouncementLane('playful');
     } catch (e: any) {
       setError(e?.message || '遊び心版の生成に失敗しました。');
     } finally {
       setAnnouncementLoading(false);
       setLoading(false);
     }
-  }, [apiKey, profile, basics, announcementStandard, announcementLoading, ensureApiKey]);
+  }, [apiKey, profile, basics, announcementStandard, announcementLoading, ensureApiKey, applyAnnouncementLane]);
 
   // 画像プロンプトは待ち時間を作らないため、グローバルオーバーレイを使わず
   // バックグラウンドで生成する（BASICS完了時に先行生成を開始）。
@@ -1351,7 +1366,7 @@ function AppContent() {
             feedbackHistory={activeAnnouncementFeedback}
             timetableSection={timetableSection}
             styleLane={announcementLane}
-            onChangeLane={setAnnouncementLane}
+            onChangeLane={applyAnnouncementLane}
             standardReady={!!announcementStandard}
             playfulStylePreset={playfulStylePreset}
             playfulStyleCustom={playfulStyleCustom}
@@ -1389,7 +1404,7 @@ function AppContent() {
             announcement={announcementForPublish}
             eventTags={eventTags}
             styleLane={chatSetupLane}
-            onChangeLane={setChatSetupLane}
+            onChangeLane={applyChatSetupLane}
             playfulAvailable={!!announcementPlayful}
             playfulLabel={announcementPlayfulStyle}
             onNext={async () => {

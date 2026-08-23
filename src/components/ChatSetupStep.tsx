@@ -223,7 +223,7 @@ export default function ChatSetupStep({
           </p>
           {playfulAvailable && (
             <p className="mt-1 text-[11px] text-slate-400 px-1">
-              ここでの選択はこの欄だけに効きます（告知文の版は告知ステップで別に選べます）
+              ここで選んだ版は告知文にも引き継がれます（告知のステップで別の版に変えることもできます）
             </p>
           )}
         </div>

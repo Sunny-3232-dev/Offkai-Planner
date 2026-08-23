@@ -12,9 +12,6 @@ const TIME_OPTIONS: string[] = Array.from({ length: 24 * 4 }, (_, i) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 });
 
-// オンライン開催は人数がざっくりになりやすいため、10人刻みの選択式にする
-const ONLINE_CAPACITY_OPTIONS: number[] = Array.from({ length: 10 }, (_, i) => (i + 1) * 10);
-
 /** 通常モードの開催場所プルダウン値から venueType を導出する */
 function deriveVenueType(onlineTool: string): 'online' | 'offline' {
   return onlineTool === 'oVice' || onlineTool === 'その他オンライン' ? 'online' : 'offline';
@@ -54,8 +51,15 @@ export default function BasicsStep({
 }: BasicsStepProps) {
   const set = (patch: Partial<EventBasics>) => onChange({ ...basics, ...patch });
 
-  // 定員入力: 入力途中で毎回2〜50にクランプすると、桁を打ち替える途中（例: 6→12で
-  // 一瞬空になる瞬間）に2へスナップして正しく入力できなくなるため、
+  // 定員の下限・上限。オンラインは会場の広さに縛られないぶん上限を広く取る。
+  // 以前オンラインは10人刻みの選択式だったが、15人・25人のような中間が選べず
+  // AIの目安どおりに設定できなかったため、対面と同じ自由入力に統一した
+  const capacityMin = 2;
+  const capacityMax = basics.venueType === 'online' ? 100 : 50;
+  const clampCapacity = (n: number) => Math.min(capacityMax, Math.max(capacityMin, Math.round(n)));
+
+  // 定員入力: 入力途中で毎回クランプすると、桁を打ち替える途中（例: 6→12で
+  // 一瞬空になる瞬間）に下限へスナップして正しく入力できなくなるため、
   // 編集中はローカルの文字列だけを自由に持たせ、フォーカスが外れた時にだけ確定・クランプする
   const [capacityInput, setCapacityInput] = useState(String(basics.capacity));
   useEffect(() => {
@@ -65,11 +69,22 @@ export default function BasicsStep({
     const trimmed = capacityInput.trim();
     // Number('') は 0 になってしまうため、空欄は明示的に「無効」として前の値に戻す
     const v = Number(trimmed);
-    const clamped =
-      trimmed !== '' && Number.isFinite(v) ? Math.min(50, Math.max(2, Math.round(v))) : basics.capacity;
+    const clamped = trimmed !== '' && Number.isFinite(v) ? clampCapacity(v) : basics.capacity;
     setCapacityInput(String(clamped));
     if (clamped !== basics.capacity) set({ capacity: clamped });
   };
+
+  /** AIの目安から1〜2人ずらしたい場面が多く、数字を打ち替えるのは手間なので −/+ を用意する */
+  const stepCapacity = (delta: number) => {
+    const next = clampCapacity(basics.capacity + delta);
+    if (next !== basics.capacity) set({ capacity: next });
+  };
+
+  // オンラインで入れた大きい定員が、対面へ切り替えた後も上限超過のまま残らないようにする
+  useEffect(() => {
+    if (basics.capacity > capacityMax) set({ capacity: capacityMax });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capacityMax]);
 
   const canProceed =
     basics.title.trim().length > 0 &&
@@ -303,39 +318,42 @@ export default function BasicsStep({
             定員（主催者含む） <span className="text-red-500 text-xs">必須</span>
           </span>
           <div className="flex flex-wrap items-center gap-3 mb-2">
-            {basics.venueType === 'online' ? (
-              // オンラインは人数がざっくりになりやすいため10人刻みの選択式にする
-              <select
-                value={basics.capacity}
-                onChange={(e) => set({ capacity: Number(e.target.value) })}
-                aria-label="定員を選択"
-                className="px-3 py-2.5 text-sm font-bold text-slate-800 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white tabular-nums"
+            {/* 直接入力に −/+ を添える。目安から1〜2人だけ動かしたいときに、
+                数字を選び直して打ち替えるのは手数が多いため */}
+            <div className="flex items-center rounded-xl border border-slate-300 bg-white overflow-hidden">
+              <button
+                type="button"
+                onClick={() => stepCapacity(-1)}
+                disabled={basics.capacity <= capacityMin}
+                aria-label="定員を1人減らす"
+                className="px-3.5 py-2.5 text-base leading-none text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               >
-                {/* 旧データ等で10人刻み以外の値がある場合も表示できるようにする */}
-                {!ONLINE_CAPACITY_OPTIONS.includes(basics.capacity) && (
-                  <option value={basics.capacity}>{basics.capacity}</option>
-                )}
-                {ONLINE_CAPACITY_OPTIONS.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            ) : (
-              // +/-ボタンと直接入力の両方があると冗長なため、直接入力のみにする
-              <div className="flex items-center rounded-xl border border-slate-300 bg-white overflow-hidden">
-                <input
-                  type="number"
-                  min={2}
-                  max={50}
-                  value={capacityInput}
-                  onChange={(e) => setCapacityInput(e.target.value)}
-                  onBlur={commitCapacityInput}
-                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                  aria-label="定員を数値で入力"
-                  className="w-16 text-center text-sm font-bold text-slate-800 tabular-nums focus:outline-none py-2.5"
-                />
-              </div>
-            )}
-            <span className="text-xs text-slate-500">人</span>
+                −
+              </button>
+              <input
+                type="number"
+                min={capacityMin}
+                max={capacityMax}
+                value={capacityInput}
+                onChange={(e) => setCapacityInput(e.target.value)}
+                onBlur={commitCapacityInput}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                aria-label="定員を数値で入力"
+                className="w-14 text-center text-sm font-bold text-slate-800 tabular-nums focus:outline-none py-2.5 border-x border-slate-200"
+              />
+              <button
+                type="button"
+                onClick={() => stepCapacity(1)}
+                disabled={basics.capacity >= capacityMax}
+                aria-label="定員を1人増やす"
+                className="px-3.5 py-2.5 text-base leading-none text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              >
+                ＋
+              </button>
+            </div>
+            <span className="text-xs text-slate-500">
+              人（{capacityMin}〜{capacityMax}人）
+            </span>
             <button
               type="button"
               onClick={onSuggestCapacity}
@@ -353,6 +371,37 @@ export default function BasicsStep({
                 {basics.capacitySuggestion.max}人）
               </p>
               <p>{basics.capacitySuggestion.reason}</p>
+              {/* 目安を読むだけでは定員に反映されないので、その場で当てはめられるようにする */}
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                {Array.from(
+                  new Set(
+                    [
+                      basics.capacitySuggestion.min,
+                      basics.capacitySuggestion.recommended,
+                      basics.capacitySuggestion.max,
+                    ]
+                      .filter((n) => Number.isFinite(n))
+                      .map(clampCapacity)
+                  )
+                ).map((n) => {
+                  const current = basics.capacity === n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => set({ capacity: n })}
+                      disabled={current}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                        current
+                          ? 'bg-amber-200/70 text-amber-800 cursor-default'
+                          : 'bg-white border border-amber-300 text-amber-700 hover:bg-amber-100'
+                      }`}
+                    >
+                      {current ? `${n}人（設定中）` : `${n}人にする`}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </section>
