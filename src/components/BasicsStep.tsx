@@ -336,6 +336,8 @@ export default function BasicsStep({
                 max={capacityMax}
                 value={capacityInput}
                 onChange={(e) => setCapacityInput(e.target.value)}
+                // 分の欄と同じく、触れたら全選択して打ち替えられるようにする
+                onFocus={(e) => e.currentTarget.select()}
                 onBlur={commitCapacityInput}
                 onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 aria-label="定員を数値で入力"

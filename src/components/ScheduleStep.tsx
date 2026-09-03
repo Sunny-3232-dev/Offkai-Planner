@@ -41,6 +41,9 @@ function DurationInput({ value, onCommit }: { value: number; onCommit: (v: numbe
       max={999}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
+      // クリックしただけでは既存の値が選択されず、打った数字が末尾に足されてしまう
+      // （15の欄に20と打つと1520になる）。分は打ち替えが前提なので、触れたら全選択する
+      onFocus={(e) => e.currentTarget.select()}
       onBlur={(e) => commit(e.currentTarget.value)}
       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
       aria-label="所要時間（分）"
