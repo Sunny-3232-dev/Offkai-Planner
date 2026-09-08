@@ -66,15 +66,34 @@ const ICON_PROMPT_BASE = `あなたはプロのデザイナーです。オフ会
 ・小さく表示されても一目で内容が伝わる視認性とコントラスト
 ・ごちゃつかせない`;
 
-export function buildIconPromptCandidates(word: string, motif: string): IconStyleCandidate[] {
+/** 配色指定の行。AIが決めた配色を全スタイルへ同じ形で流し込み、同じ会のアイコンとして色が揃うようにする */
+function colorLine(colorPalette?: string): string {
+  const trimmed = (colorPalette || '').trim();
+  return trimmed ? `\n・配色は「${trimmed}」を基調にする` : '';
+}
+
+/** 文字が長いと円の中で潰れるため、2行に分ける判断基準を各スタイルへ共通で添える */
+function wordLayoutLine(word: string): string {
+  return word.length >= 5
+    ? `（5文字以上あるので、意味の切れ目で2行に分けて組む。1行に詰め込まない）`
+    : '';
+}
+
+export function buildIconPromptCandidates(
+  word: string,
+  motif: string,
+  colorPalette?: string
+): IconStyleCandidate[] {
+  const color = colorLine(colorPalette);
+  const layout = wordLayoutLine(word);
   return [
     {
       key: 'text',
       label: '文字メイン',
       prompt: `${ICON_PROMPT_BASE}
 ・背景はシンプル（無地〜ゆるやかなグラデーション。細かい描写・イラストは入れない）
-・中央に「${word}」という文字を大きく・はっきり・読みやすく配置（文字がアイコンの主役）
-・装飾は最小限`,
+・中央に「${word}」という文字を大きく・はっきり・読みやすく配置（文字がアイコンの主役）${layout}
+・装飾は最小限${color}`,
     },
     {
       key: 'motif',
@@ -82,15 +101,25 @@ export function buildIconPromptCandidates(word: string, motif: string): IconStyl
       prompt: `${ICON_PROMPT_BASE}
 ・背景はシンプル（無地〜ゆるやかなグラデーション）
 ・中央に「${motif}」のモチーフを大きく描く（アイコンの主役）
-・モチーフの下に「${word}」という文字を、一字一句このまま・読みやすく添える`,
+・モチーフの下に「${word}」という文字を、一字一句このまま・読みやすく添える${layout}${color}`,
     },
     {
       key: 'clay',
       label: 'ぷっくり3D',
       prompt: `${ICON_PROMPT_BASE}
 ・「${motif}」のモチーフを、ぷっくりとした3D（クレイ調で丸みがあり、柔らかく可愛い立体感のあるスタイル）で大きく描く
-・「${word}」という文字を、一字一句このまま・読みやすく配置する
-・明るく親しみやすい配色`,
+・「${word}」という文字を、一字一句このまま・読みやすく配置する${layout}
+・明るく親しみやすい配色${color}`,
+    },
+    {
+      key: 'badge',
+      label: 'バッジ風',
+      prompt: `${ICON_PROMPT_BASE}
+・記章（エンブレム）のデザインにする。円のかたちを活かした構成
+・円の内側に沿って細いリングを1本引き、その内側に「${motif}」のモチーフを中央配置で大きく描く
+・「${word}」という文字を、一字一句このまま・モチーフの下に読みやすく置く${layout}
+・リングの上側の弧に沿って「OFFKAI」の英字を小さく回す（下側の弧には何も置かない）
+・左右対称に整え、余計な装飾は足さない${color}`,
     },
   ];
 }

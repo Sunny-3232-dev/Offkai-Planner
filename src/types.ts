@@ -84,7 +84,7 @@ export interface ScheduleItem {
 
 /** チャットアイコンのスタイル候補（3方向。プロンプトはコード側テンプレートで組み立てる） */
 export interface IconStyleCandidate {
-  key: 'text' | 'motif' | 'clay';
+  key: 'text' | 'motif' | 'clay' | 'badge';
   label: string;
   /** このスタイルの完成プロンプト全文 */
   prompt: string;
@@ -97,7 +97,9 @@ export interface IconPromptResult {
   motif: string;
   /** プレビュー表示用の絵文字1つ */
   emoji: string;
-  /** スタイル別のプロンプト候補（3件） */
+  /** 会の雰囲気に合う配色。全スタイルへ同じものを渡し、アイコンの色が毎回ばらつかないようにする */
+  colorPalette?: string;
+  /** スタイル別のプロンプト候補 */
   candidates: IconStyleCandidate[];
   styleNote: string;
 }

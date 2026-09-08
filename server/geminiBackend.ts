@@ -867,15 +867,34 @@ const ICON_PROMPT_BASE = `あなたはプロのデザイナーです。オフ会
 ・小さく表示されても一目で内容が伝わる視認性とコントラスト
 ・ごちゃつかせない`;
 
-export function buildIconPromptCandidates(word: string, motif: string): IconStyleCandidate[] {
+/** 配色指定の行。AIが決めた配色を全スタイルへ同じ形で流し込み、同じ会のアイコンとして色が揃うようにする */
+function colorLine(colorPalette?: string): string {
+  const trimmed = (colorPalette || '').trim();
+  return trimmed ? `\n・配色は「${trimmed}」を基調にする` : '';
+}
+
+/** 文字が長いと円の中で潰れるため、2行に分ける判断基準を各スタイルへ共通で添える */
+function wordLayoutLine(word: string): string {
+  return word.length >= 5
+    ? `（5文字以上あるので、意味の切れ目で2行に分けて組む。1行に詰め込まない）`
+    : '';
+}
+
+export function buildIconPromptCandidates(
+  word: string,
+  motif: string,
+  colorPalette?: string
+): IconStyleCandidate[] {
+  const color = colorLine(colorPalette);
+  const layout = wordLayoutLine(word);
   return [
     {
       key: 'text',
       label: '文字メイン',
       prompt: `${ICON_PROMPT_BASE}
 ・背景はシンプル（無地〜ゆるやかなグラデーション。細かい描写・イラストは入れない）
-・中央に「${word}」という文字を大きく・はっきり・読みやすく配置（文字がアイコンの主役）
-・装飾は最小限`,
+・中央に「${word}」という文字を大きく・はっきり・読みやすく配置（文字がアイコンの主役）${layout}
+・装飾は最小限${color}`,
     },
     {
       key: 'motif',
@@ -883,15 +902,25 @@ export function buildIconPromptCandidates(word: string, motif: string): IconStyl
       prompt: `${ICON_PROMPT_BASE}
 ・背景はシンプル（無地〜ゆるやかなグラデーション）
 ・中央に「${motif}」のモチーフを大きく描く（アイコンの主役）
-・モチーフの下に「${word}」という文字を、一字一句このまま・読みやすく添える`,
+・モチーフの下に「${word}」という文字を、一字一句このまま・読みやすく添える${layout}${color}`,
     },
     {
       key: 'clay',
       label: 'ぷっくり3D',
       prompt: `${ICON_PROMPT_BASE}
 ・「${motif}」のモチーフを、ぷっくりとした3D（クレイ調で丸みがあり、柔らかく可愛い立体感のあるスタイル）で大きく描く
-・「${word}」という文字を、一字一句このまま・読みやすく配置する
-・明るく親しみやすい配色`,
+・「${word}」という文字を、一字一句このまま・読みやすく配置する${layout}
+・明るく親しみやすい配色${color}`,
+    },
+    {
+      key: 'badge',
+      label: 'バッジ風',
+      prompt: `${ICON_PROMPT_BASE}
+・記章（エンブレム）のデザインにする。円のかたちを活かした構成
+・円の内側に沿って細いリングを1本引き、その内側に「${motif}」のモチーフを中央配置で大きく描く
+・「${word}」という文字を、一字一句このまま・モチーフの下に読みやすく置く${layout}
+・リングの上側の弧に沿って「OFFKAI」の英字を小さく回す（下側の弧には何も置かない）
+・左右対称に整え、余計な装飾は足さない${color}`,
     },
   ];
 }
@@ -911,17 +940,24 @@ export async function generateIconPromptServer(
 - 雰囲気: ${concept.cherish.join('、')}
 
 ## 出力する素材
-- word: アイコンに載せる短い名詞（1〜6文字目安。例: 朝活／もくもく／ボドゲ／副業／読書会）
+- word: アイコンを見ただけで「何をする会か」が伝わる文字（2〜8文字）
+  - **必ず、その会の中身を決める言葉を含めること**（例: 家計簿、Notion、ボードゲーム、ふるさと納税、簿記3級）
+  - 「もくもく」「交流」「朝活」「勉強会」「オフ会」のような、集まりの形式だけで終わらせてはいけない。
+    形式を入れたい場合は、必ず内容の言葉と組み合わせる（○「家計簿もくもく」「Notion勉強会」／×「もくもく」「交流会」）
+  - 悪い例: タイトルが「家計簿もくもく会」なのに word を「もくもく」にする。何の会か分からなくなるため禁止
+  - 「会」「の会」で終える必要はない。内容が伝わることを最優先する
   - タイトルにある言葉を使う場合は一字一句正確にコピーすること。文字の脱落・変更は厳禁（例:「スキルマ」を「スキマ」と書かない）
   - 動詞・文の断片・助詞付き表現は禁止。必ず名詞で終えること
 - motif: オフ会の内容を象徴する具体的なモチーフ1つ（15文字以内。例: サイコロとカード、湯気の立つコーヒー、芽が出た貯金箱）
 - emoji: そのモチーフに最も近い絵文字1つ
+- colorPalette: この会の雰囲気に合う配色（30文字以内）。主役の色と背景の色が分かるように具体的な色名で書く
+  （例: 「生成りの背景に、若草色と山吹色」「濃紺の背景に、白とゴールド」）
 
 ## 出力形式（JSON）
 必ず有効なJSONのみを出力してください。
 
 \`\`\`json
-{ "word": "...", "motif": "...", "emoji": "...", "styleNote": "主催者向けの補足（生成のコツ、40文字以内）" }
+{ "word": "...", "motif": "...", "emoji": "...", "colorPalette": "...", "styleNote": "主催者向けの補足（生成のコツ、40文字以内）" }
 \`\`\``;
 
   const text = await callGemini(apiKey, prompt);
@@ -931,11 +967,13 @@ export async function generateIconPromptServer(
   if (!word) {
     throw new Error('アイコン用素材の生成結果を読み取れませんでした。再度お試しください。');
   }
+  const colorPalette = String(parsed?.colorPalette || '').trim();
   return {
     word,
     motif: motif || word,
     emoji: String(parsed?.emoji || '🎉').trim() || '🎉',
-    candidates: buildIconPromptCandidates(word, motif || word),
+    colorPalette,
+    candidates: buildIconPromptCandidates(word, motif || word, colorPalette),
     styleNote: String(parsed?.styleNote || ''),
   };
 }

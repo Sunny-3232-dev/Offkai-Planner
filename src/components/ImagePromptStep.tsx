@@ -115,6 +115,24 @@ function IconStylePreview({ styleKey, word, emoji }: { styleKey: IconStyleCandid
       </div>
     );
   }
+  if (styleKey === 'badge') {
+    // 円の内側にリングを引き、その中にモチーフと文字を収める記章の形をそのまま縮小して見せる
+    return (
+      <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center">
+        <div className="w-[68px] h-[68px] rounded-full border border-amber-300/70 flex flex-col items-center justify-center">
+          <span className="text-[7px] font-bold tracking-[0.18em] text-amber-300/90 leading-none">OFFKAI</span>
+          <span className="text-lg leading-none mt-0.5" aria-hidden="true">{emoji}</span>
+          <span
+            className={`font-bold text-white mt-0.5 px-0.5 text-center leading-tight ${
+              word.length > 6 ? 'text-[8px]' : 'text-[9px]'
+            }`}
+          >
+            {word}
+          </span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-100 via-orange-50 to-sky-100 flex flex-col items-center justify-center"
@@ -217,7 +235,7 @@ export default function ImagePromptStep({
             </div>
 
             {/* スタイル候補（プレビュー付き） */}
-            <div className="grid grid-cols-3 gap-2 mb-2" role="radiogroup" aria-label="アイコンのスタイル">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2" role="radiogroup" aria-label="アイコンのスタイル">
               {iconCandidates.map((c) => (
                 <button
                   key={c.key}

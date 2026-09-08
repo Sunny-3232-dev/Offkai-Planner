@@ -91,11 +91,13 @@ function migrateIconPrompt(stored: (Partial<IconPromptResult> & { prompt?: strin
   const word = String(stored.word || '').trim();
   if (!word) return null;
   const motif = String(stored.motif || '').trim() || word;
+  const colorPalette = String(stored.colorPalette || '').trim();
   return {
     word,
     motif,
     emoji: String(stored.emoji || '').trim() || '🎉',
-    candidates: buildIconPromptCandidates(word, motif),
+    colorPalette,
+    candidates: buildIconPromptCandidates(word, motif, colorPalette),
     styleNote: String(stored.styleNote || ''),
   };
 }
@@ -1020,7 +1022,9 @@ function AppContent() {
   /** アイコンに載せる文字を主催者が手で直す（3スタイルのプロンプトも組み立て直す） */
   const handleChangeIconWord = useCallback((word: string) => {
     setIconPrompt((prev) =>
-      prev ? { ...prev, word, candidates: buildIconPromptCandidates(word, prev.motif) } : prev
+      prev
+        ? { ...prev, word, candidates: buildIconPromptCandidates(word, prev.motif, prev.colorPalette) }
+        : prev
     );
   }, []);
 
