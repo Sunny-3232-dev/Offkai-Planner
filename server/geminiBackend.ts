@@ -873,9 +873,25 @@ function colorLine(colorPalette?: string): string {
   return trimmed ? `\n・配色は「${trimmed}」を基調にする` : '';
 }
 
-/** 文字が長いと円の中で潰れるため、2行に分ける判断基準を各スタイルへ共通で添える */
+/** アイコン文字は改行で2行に分けられる。表示・プロンプト埋め込み用に行へ分解する */
+export function iconWordLines(word: string): string[] {
+  return word.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 2);
+}
+
+/** プロンプトに埋め込む一続きの文字（改行はレイアウト指示側で伝えるため、ここでは連結する） */
+function joinedWord(word: string): string {
+  const lines = iconWordLines(word);
+  return lines.length > 0 ? lines.join('') : word.trim();
+}
+
+/** 文字が長いと円の中で潰れるため、改行位置を各スタイルへ共通で添える。
+ *  主催者が改行を入れていればその位置を尊重し、無ければ長いときだけAIに任せる */
 function wordLayoutLine(word: string): string {
-  return word.length >= 5
+  const lines = iconWordLines(word);
+  if (lines.length >= 2) {
+    return `（「${lines[0]}」を1行目、「${lines[1]}」を2行目にして、必ず2行で組む）`;
+  }
+  return joinedWord(word).length >= 5
     ? `（5文字以上あるので、意味の切れ目で2行に分けて組む。1行に詰め込まない）`
     : '';
 }
@@ -887,13 +903,14 @@ export function buildIconPromptCandidates(
 ): IconStyleCandidate[] {
   const color = colorLine(colorPalette);
   const layout = wordLayoutLine(word);
+  const wordText = joinedWord(word);
   return [
     {
       key: 'text',
       label: '文字メイン',
       prompt: `${ICON_PROMPT_BASE}
 ・背景はシンプル（無地〜ゆるやかなグラデーション。細かい描写・イラストは入れない）
-・中央に「${word}」という文字を大きく・はっきり・読みやすく配置（文字がアイコンの主役）${layout}
+・中央に「${wordText}」という文字を大きく・はっきり・読みやすく配置（文字がアイコンの主役）${layout}
 ・装飾は最小限${color}`,
     },
     {
@@ -902,14 +919,14 @@ export function buildIconPromptCandidates(
       prompt: `${ICON_PROMPT_BASE}
 ・背景はシンプル（無地〜ゆるやかなグラデーション）
 ・中央に「${motif}」のモチーフを大きく描く（アイコンの主役）
-・モチーフの下に「${word}」という文字を、一字一句このまま・読みやすく添える${layout}${color}`,
+・モチーフの下に「${wordText}」という文字を、一字一句このまま・読みやすく添える${layout}${color}`,
     },
     {
       key: 'clay',
       label: 'ぷっくり3D',
       prompt: `${ICON_PROMPT_BASE}
 ・「${motif}」のモチーフを、ぷっくりとした3D（クレイ調で丸みがあり、柔らかく可愛い立体感のあるスタイル）で大きく描く
-・「${word}」という文字を、一字一句このまま・読みやすく配置する${layout}
+・「${wordText}」という文字を、一字一句このまま・読みやすく配置する${layout}
 ・明るく親しみやすい配色${color}`,
     },
     {
@@ -918,7 +935,7 @@ export function buildIconPromptCandidates(
       prompt: `${ICON_PROMPT_BASE}
 ・記章（エンブレム）のデザインにする。円のかたちを活かした構成
 ・円の内側に沿って細いリングを1本引き、その内側に「${motif}」のモチーフを中央配置で大きく描く
-・「${word}」という文字を、一字一句このまま・モチーフの下に読みやすく置く${layout}
+・「${wordText}」という文字を、一字一句このまま・モチーフの下に読みやすく置く${layout}
 ・リングの上側の弧に沿って「OFFKAI」の英字を小さく回す（下側の弧には何も置かない）
 ・左右対称に整え、余計な装飾は足さない${color}`,
     },

@@ -97,13 +97,21 @@ function AiLauncherLinks() {
   );
 }
 
+/** アイコン文字は2行まで。3行目以降と余分な改行は落とす（円の中に収まらないため） */
+function limitIconWord(raw: string): string {
+  const lines = raw.split('\n');
+  return lines.slice(0, 2).join('\n').slice(0, 22);
+}
+
 /** アイコンスタイルの雰囲気を伝える簡易プレビュー（CSS/絵文字による近似イメージ） */
 function IconStylePreview({ styleKey, word, emoji }: { styleKey: IconStyleCandidate['key']; word: string; emoji: string }) {
-  const wordSize = word.length > 4 ? 'text-[13px]' : 'text-lg';
+  // 折り返しの判定は「いちばん長い行」で見る。改行文字を長さに数えると小さくなりすぎるため
+  const longestLine = Math.max(...word.split('\n').map((l) => l.trim().length), 0);
+  const wordSize = longestLine > 4 ? 'text-[13px]' : 'text-lg';
   if (styleKey === 'text') {
     return (
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center">
-        <span className={`text-white font-bold ${wordSize} leading-none px-1 text-center`}>{word}</span>
+        <span className={`text-white font-bold ${wordSize} leading-tight px-1 text-center whitespace-pre-line`}>{word}</span>
       </div>
     );
   }
@@ -111,7 +119,7 @@ function IconStylePreview({ styleKey, word, emoji }: { styleKey: IconStyleCandid
     return (
       <div className="w-20 h-20 rounded-full bg-gradient-to-b from-amber-50 to-orange-100 border border-orange-200 flex flex-col items-center justify-center">
         <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>
-        <span className="text-[10px] font-bold text-slate-700 mt-1 px-1 text-center leading-none">{word}</span>
+        <span className="text-[10px] font-bold text-slate-700 mt-1 px-1 text-center leading-tight whitespace-pre-line">{word}</span>
       </div>
     );
   }
@@ -123,8 +131,8 @@ function IconStylePreview({ styleKey, word, emoji }: { styleKey: IconStyleCandid
           <span className="text-[7px] font-bold tracking-[0.18em] text-amber-300/90 leading-none">OFFKAI</span>
           <span className="text-lg leading-none mt-0.5" aria-hidden="true">{emoji}</span>
           <span
-            className={`font-bold text-white mt-0.5 px-0.5 text-center leading-tight ${
-              word.length > 6 ? 'text-[8px]' : 'text-[9px]'
+            className={`font-bold text-white mt-0.5 px-0.5 text-center leading-tight whitespace-pre-line ${
+              longestLine > 6 ? 'text-[8px]' : 'text-[9px]'
             }`}
           >
             {word}
@@ -139,7 +147,7 @@ function IconStylePreview({ styleKey, word, emoji }: { styleKey: IconStyleCandid
       style={{ boxShadow: 'inset 0 -6px 10px rgba(0,0,0,0.06), inset 0 6px 10px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.10)' }}
     >
       <span className="text-2xl leading-none" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.25))' }} aria-hidden="true">{emoji}</span>
-      <span className="text-[10px] font-bold text-slate-700 mt-1 px-1 text-center leading-none">{word}</span>
+      <span className="text-[10px] font-bold text-slate-700 mt-1 px-1 text-center leading-tight whitespace-pre-line">{word}</span>
     </div>
   );
 }
@@ -219,19 +227,23 @@ export default function ImagePromptStep({
             </div>
 
             {/* アイコン文字（手で直せる。プレビュー・プロンプトも連動） */}
-            <div className="flex items-center gap-2 mb-3">
-              <label htmlFor="iconWord" className="text-xs font-semibold text-slate-600 shrink-0">
+            <div className="flex items-start gap-2 mb-3">
+              <label htmlFor="iconWord" className="text-xs font-semibold text-slate-600 shrink-0 pt-2">
                 アイコン文字
               </label>
-              <input
+              <textarea
                 id="iconWord"
-                type="text"
                 value={iconPrompt.word}
-                onChange={(e) => onChangeIconWord(e.target.value)}
-                maxLength={10}
-                className="w-40 px-3 py-1.5 text-sm font-bold text-sky-700 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+                onChange={(e) => onChangeIconWord(limitIconWord(e.target.value))}
+                rows={2}
+                maxLength={22}
+                className="w-40 px-3 py-1.5 text-sm font-bold text-sky-700 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white resize-none leading-snug"
               />
-              <span className="text-[11px] text-slate-400">自由に書き換えられます</span>
+              <span className="text-[11px] text-slate-400 pt-1.5">
+                自由に書き換えられます。
+                <br />
+                改行すると2行で組みます
+              </span>
             </div>
 
             {/* スタイル候補（プレビュー付き） */}
