@@ -23,6 +23,16 @@ async function postApi<T>(endpoint: string, body: any): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  // 配信側のサーバーが古いと、まだ無いAPIパスに対してページ本体(HTML)を200で返してくる。
+  // そのままJSONとして読むと「Unexpected token '<'」という意味の取れないエラーになるので、
+  // 先に見分けて、何をすればいいかを伝える
+  const contentType = res.headers.get('content-type') || '';
+  if (res.ok && !contentType.includes('application/json')) {
+    throw new Error(
+      'アプリの更新がまだサーバー側に反映されていないようです。' +
+        'ページを再読み込みしても直らない場合は、作者側で最新版を取り込む必要があります。'
+    );
+  }
   if (!res.ok) {
     let errMessage = 'AIとの通信中にエラーが発生しました';
     try {
