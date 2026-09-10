@@ -154,6 +154,16 @@ function computeRegionHint(basics: EventBasics): string {
   return basics.venueType === 'offline' ? basics.venueDetail : '';
 }
 
+/** 先行生成をまとめて投げると、1分あたりの上限にいっぺんに当たる。
+ *  配布版は利用者全員が同じキーを共有するため、1人がボタンを押しただけでも
+ *  4本同時だと上限に届いてしまう。順番に間隔を空けて投げて、山を作らない。 */
+function runStaggered(tasks: Array<() => void>, intervalMs = 1800): void {
+  tasks.forEach((task, i) => {
+    if (i === 0) task();
+    else setTimeout(task, intervalMs * i);
+  });
+}
+
 /** APIキーがどこから来たか。認証エラーの原因切り分けに使う
  *  （手動保存したキーが古いまま残っていると、AI Studio側は正常でも権限エラーが出続けるため） */
 type ApiKeySource = 'stored' | 'session' | 'env' | 'none';
@@ -1293,12 +1303,19 @@ function AppContent() {
                 ].filter(Boolean);
                 const ok = await confirmDialog(`「いつ・どこで？」の内容が変更されています。${parts.join('・')}を作り直しますか？`);
                 if (ok) {
-                  if (scheduleStale) runGenerateSchedule();
-                  // 詳細はバックグラウンドで作り直す（進行イメージの生成と並列）
-                  if (announcementStale) runGenerateAnnouncement('', { silent: true });
+                  // 画面で待たせる「当日の流れ」を先に投げ、案内文は間隔を空けて続ける
+                  runStaggered([
+                    ...(scheduleStale ? [() => runGenerateSchedule()] : []),
+                    ...(announcementStale ? [() => runGenerateAnnouncement('', { silent: true })] : []),
+                  ]);
+                  // アイコンと画像は2つ先のステップで使う。ここで作り直すと、
+                  // その前にまた内容を変えられたときに二度手間になるうえ、
+                  // 同じ瞬間に投げるリクエストが増えて利用上限に当たりやすくなる。
+                  // 古い前提のものを捨てておき、そのステップに入ったときに作り直す
                   if (imagesStale) {
-                    runGenerateIconPrompt({ silent: true });
-                    runGenerateThumbnail({ silent: true });
+                    setIconPrompt(null);
+                    setThumbnailAssets(null);
+                    setImagesSourceKey('');
                   }
                 } else {
                   // 作り直さない場合は「確認済み」として記録し、以後の誤検知を防ぐ
@@ -1307,12 +1324,13 @@ function AppContent() {
                   if (imagesStale) setImagesSourceKey(currentKey);
                 }
               } else {
-                if (schedule.length === 0) runGenerateSchedule();
-                // 詳細（公開情報）・画像プロンプトはここで材料が揃うので先行生成しておく
-                // （進行イメージと並列で走らせ、後のステップで待たせない）
-                if (!announcementStandard) runGenerateAnnouncement('', { silent: true });
-                if (!iconPrompt) runGenerateIconPrompt({ silent: true });
-                if (!thumbnailAssets) runGenerateThumbnail({ silent: true });
+                // 先行生成は「次に見るステップ」までにとどめる。
+                // アイコンと画像は2つ先なので、ここでは作らない（作っても途中で前提が変わりやすく、
+                // 一度に投げるリクエストが増えて利用上限に当たりやすくなるため）
+                runStaggered([
+                  ...(schedule.length === 0 ? [() => runGenerateSchedule()] : []),
+                  ...(!announcementStandard ? [() => runGenerateAnnouncement('', { silent: true })] : []),
+                ]);
               }
               goToStep(AppStep.SCHEDULE);
             }}
@@ -1378,9 +1396,12 @@ function AppContent() {
             onGeneratePlayful={runGeneratePlayfulAnnouncement}
             onNext={() => {
               goToStep(AppStep.IMAGE_PROMPTS);
-              // 先行生成が失敗していた場合のフォールバック（バックグラウンドで再試行）
-              if (!iconPrompt) runGenerateIconPrompt({ silent: true });
-              if (!thumbnailAssets) runGenerateThumbnail({ silent: true });
+              // アイコンと画像はここで用意する（次に開く画面で使うため）。
+              // 2本を同時に投げず間隔を空けて、利用上限に当たりにくくする
+              runStaggered([
+                ...(!iconPrompt ? [() => runGenerateIconPrompt({ silent: true })] : []),
+                ...(!thumbnailAssets ? [() => runGenerateThumbnail({ silent: true })] : []),
+              ]);
             }}
             onBack={() => setStep(AppStep.SCHEDULE)}
           />

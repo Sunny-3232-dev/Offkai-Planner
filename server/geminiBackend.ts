@@ -19,11 +19,19 @@ import { removeTimetableSection } from '../src/utils/time';
 const MODEL = 'gemini-3.6-flash';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 3000;
-const RATE_LIMIT_RETRY_DELAY_MS = 30000;
+// 1分あたりの上限は数秒〜十数秒で空くことが多い。30秒待って1回だけ試すより、
+// 短い間隔から段階的に粘るほうが復帰しやすい（合計でも約40秒に収まる）
+const RATE_LIMIT_RETRY_DELAYS_MS = [5000, 12000, 25000];
 // 混雑（503）は数秒で解消することが多いので、レート制限より短い間隔から始める
 const OVERLOADED_RETRY_DELAY_MS = 2000;
 
 export const AI_STUDIO_SESSION_KEY = '__aistudio-session__';
+
+/** 利用者が自分のキーを設定しておらず、作者のキー（配布版で全員が共有）を使う状態か。
+ *  getClient のフォールバック条件と必ず同じにすること */
+function isSharedKey(userApiKey?: string): boolean {
+  return !userApiKey || userApiKey === AI_STUDIO_SESSION_KEY;
+}
 
 function getClient(userApiKey?: string) {
   let keyToUse = userApiKey;
@@ -66,16 +74,28 @@ function rawErrorDetail(errorStr: string): string {
   return `\n\n［Googleからの応答］\n${trimmed.slice(0, 500)}`;
 }
 
-function classifyError(error: any): { type: 'rate-limit' | 'overloaded' | 'auth' | 'network' | 'timeout' | 'unknown'; message: string } {
+function classifyError(error: any, sharedKey = false): { type: 'rate-limit' | 'overloaded' | 'auth' | 'network' | 'timeout' | 'unknown'; message: string } {
   const errorStr = error?.message || String(error);
   const status = error?.status || error?.code;
 
   if (status === 429 || errorStr.includes('quota') || errorStr.includes('rate limit') || errorStr.includes('RESOURCE_EXHAUSTED')) {
+    // 配布版は利用者全員が作者のキーを共有するため、自分の使いすぎではなく
+    // 同時に使っている人との取り合いで当たることが多い。原因を取り違えないよう文面を分ける
+    if (sharedKey) {
+      return {
+        type: 'rate-limit',
+        message:
+          'いまアクセスが集中していて、1分あたりの利用上限に当たりました。' +
+          'あなたの使いすぎではなく、同じ時間に使っている人と枠を分け合っているためです。' +
+          '少し待つと直ります（自動でも数回やり直しています）。入力した内容は残っているので、そのままやり直せます。' +
+          '何度も出る場合は、自分のGoogleアカウントで無料のAPIキーを作り、画面右上の鍵アイコンから設定すると、他の人と取り合わずに使えます。',
+      };
+    }
     return {
       type: 'rate-limit',
       message:
         '無料枠の利用上限に達しました。' +
-        '1分あたりの上限であることが多く、その場合は1分ほど待ってから再実行すると直ります（自動での再試行も1回行っています）。' +
+        '1分あたりの上限であることが多く、その場合は1分ほど待ってから再実行すると直ります（自動での再試行も数回行っています）。' +
         '何度も出る場合は1日あたりの上限に達している可能性があり、翌日まで待つか、別のGoogleアカウントで作成したAPIキーを画面右上の鍵アイコンから設定してください。' +
         '※上限はAPIキーではなくGoogleアカウント単位のため、同じアカウントでキーを作り直しても解消しません。',
     };
@@ -98,6 +118,7 @@ function classifyError(error: any): { type: 'rate-limit' | 'overloaded' | 'auth'
         '(1) このアカウントでAPIキーをまだ作っていない・利用規約に同意していない → 別タブで https://aistudio.google.com/apikey を開いて作成してください。' +
         '(2) キーが属するGoogle Cloudプロジェクト側の問題（Generative Language APIが無効、またはプロジェクトがアクセス拒否状態）→ 別プロジェクトで作ったキーを画面右上の鍵アイコンから設定すると切り分けられます。' +
         '(3) 会社・学校のGoogleアカウントで管理者によりAI Studioが無効化されている → 個人アカウントをお使いください。' +
+        '※AI Studioで開いている場合は、しばらく操作しないと接続が切れることがあります。まずページを再読み込みしてみてください。' +
         '下の［Googleからの応答］に、どれに当たるかが書かれています。' +
         rawErrorDetail(errorStr),
     };
@@ -130,10 +151,10 @@ export async function callGemini(apiKey: string, prompt: string, retryCount = 0)
     if (!text) throw new Error('AIからの応答がありませんでした');
     return text;
   } catch (error: any) {
-    const classification = classifyError(error);
+    const classification = classifyError(error, isSharedKey(apiKey));
 
-    if (classification.type === 'rate-limit' && retryCount === 0) {
-      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_RETRY_DELAY_MS));
+    if (classification.type === 'rate-limit' && retryCount < RATE_LIMIT_RETRY_DELAYS_MS.length) {
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_RETRY_DELAYS_MS[retryCount]));
       return callGemini(apiKey, prompt, retryCount + 1);
     }
 
