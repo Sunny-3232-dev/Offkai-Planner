@@ -13,6 +13,8 @@ import type {
   ThumbnailAssets,
   ShareTexts,
   AnnouncementResult,
+  SurveyPlan,
+  SurveyQuestionDef,
 } from '../src/types';
 import { removeTimetableSection } from '../src/utils/time';
 
@@ -1179,5 +1181,99 @@ ${historyText ? `\n## 主催者からの書き直し要望（これまでに伝�
   return {
     regionalChat: String(parsed.regionalChat || ''),
     tweet: String(parsed.tweet || ''),
+  };
+}
+
+export async function generateSurveyPlanServer(
+  apiKey: string,
+  concept: IdeaConcept,
+  idea: PlanIdea,
+  basics: EventBasics,
+  organizerName: string
+): Promise<SurveyPlan> {
+  const venueLabel = venueLabelOf(basics);
+  const prompt = `あなたはリベシティ（オンラインコミュニティ）のオフ会をサポートするAIです。
+オフ会が終わったあとに参加者へ配る「開催後アンケート」を設計してください。Googleフォームで配ります。
+
+## オフ会の情報
+- タイトル: ${basics.title}
+- 内容: ${idea.summary}
+- 大切にしたいこと: ${concept.cherish.join('、')}
+- 開催場所: ${venueLabel}
+- 主催者名: ${organizerName || '主催者'}
+
+## 設計のルール
+- 回答は2〜3分で終わる分量にする。設問は7〜9問まで
+- 本名・住所・連絡先などの個人情報は聞かない
+- 選択式で分かることは選択式にし、自由記述は理由の深掘りだけに絞る
+- 自由記述には「1〜2行でOK」「箇条書きでも大丈夫です」のような短く書ける案内を helpText に入れる
+- 主催者が次回の判断に使える情報を集める。感想を集めるだけで終わらせない
+- 「参加してよかったか」だけでなく「次に何をしてほしいか」を必ず1問入れる
+- 断定的な言い方（改善します、必ず反映します）は避け、「次回の参考にします」程度にとどめる
+- 設問文は話し言葉でやわらかく。堅い敬語や事務的な言い回しにしない
+
+## 必ず入れる設問（この順番で）
+1) リベネーム（TEXT・必須）「リベシティでの表示名（リベネーム）を教えてください」
+2) 参加のきっかけ（CHECKBOX・必須）オフ会の内容に沿った選択肢を作り、「その他」を必ず含める
+3) 満足度（RADIO・必須）「とても満足」「満足」「どちらともいえない」「やや不満」「不満」
+4) 進行や時間配分について（RADIO・必須）「ちょうどよかった」「少し長かった」「少し短かった」など
+5) よかったところ（PARAGRAPH・必須）1〜2行でOKと案内する
+6) 次に取り上げてほしいテーマ（PARAGRAPH または CHECKBOX・必須）
+7) また参加したいか（RADIO・必須）
+8) 主催者へひとこと（PARAGRAPH・任意）「もしよければ、ひとこといただけると励みになります（任意）」
+
+## そのほかに出すもの
+- thanksMessage: 回答し終えた直後にフォーム上へ表示されるお礼文（80〜150文字）。
+  主催者本人の言葉として書く。参加への感謝と、次につながる一言を入れる。堅くしない
+- headerImagePrompt: このアンケートのGoogleフォームに置くヘッダー画像を、画像生成AIで作るためのプロンプト全文。
+  「あなたはプロのデザイナーです。」で書き始め、横長のバナー（1600x400程度）であること、
+  オフ会の内容が伝わるモチーフ、文字は入れても短く読みやすくすること、
+  上部と左右に余白を取ること（フォームで見切れるため）を必ず含める
+
+## 出力形式（JSON）
+必ず有効なJSONのみを出力してください。typeは TEXT / PARAGRAPH / RADIO / CHECKBOX のいずれか。
+
+\`\`\`json
+{
+  "formTitle": "...",
+  "formDescription": "...",
+  "questions": [
+    { "title": "...", "type": "TEXT", "required": true, "helpText": "..." },
+    { "title": "...", "type": "CHECKBOX", "required": true, "options": ["...", "その他"], "helpText": "..." }
+  ],
+  "thanksMessage": "...",
+  "headerImagePrompt": "..."
+}
+\`\`\``;
+
+  const text = await callGemini(apiKey, prompt);
+  const parsed = extractJSON(text);
+  const rawQuestions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+  const allowed = ['TEXT', 'PARAGRAPH', 'RADIO', 'CHECKBOX'];
+  const questions: SurveyQuestionDef[] = rawQuestions
+    .map((q: any) => {
+      const type = allowed.includes(String(q?.type)) ? String(q.type) : 'PARAGRAPH';
+      const options = Array.isArray(q?.options) ? q.options.map((o: any) => String(o)).filter(Boolean) : undefined;
+      return {
+        title: String(q?.title || '').trim(),
+        type: type as SurveyQuestionDef['type'],
+        // 選択式なのに選択肢が無いと、貼り付けたGASがフォーム作成時に落ちる
+        options: type === 'RADIO' || type === 'CHECKBOX' ? (options && options.length > 0 ? options : ['はい', 'いいえ']) : undefined,
+        required: q?.required !== false,
+        helpText: q?.helpText ? String(q.helpText) : undefined,
+      };
+    })
+    .filter((q: SurveyQuestionDef) => q.title);
+
+  if (questions.length === 0) {
+    throw new Error('アンケートの設問を読み取れませんでした。再度お試しください。');
+  }
+
+  return {
+    formTitle: String(parsed?.formTitle || `${basics.title} アンケート`).trim(),
+    formDescription: String(parsed?.formDescription || '').trim(),
+    questions,
+    thanksMessage: String(parsed?.thanksMessage || 'ご参加ありがとうございました！').trim(),
+    headerImagePrompt: String(parsed?.headerImagePrompt || '').trim(),
   };
 }

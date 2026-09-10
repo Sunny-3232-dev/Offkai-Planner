@@ -28,6 +28,7 @@ const FLOW = [
   { Icon: ImageIcon, title: 'アイコンと画像', desc: 'チャットアイコンと告知画像のプロンプト' },
   { Icon: MessagePlusIcon, title: 'チャットを立てる', desc: 'コピペするだけでオフ会チャットが完成' },
   { Icon: MegaphoneIcon, title: 'みんなに知らせる', desc: 'チャットURLを添えて支部チャット・つぶやきへ' },
+  { Icon: CheckIcon, title: '感想を集める', desc: '開催後アンケートをフォームごと用意' },
 ];
 
 /** 何をしてくれるツールなのかを3つで言い切る（LPと同じ内容・同じ順番） */
@@ -82,7 +83,7 @@ export default function Hub({
 
         <p className="text-slate-600 mt-5 mb-1">{APP_TAGLINE}</p>
         <p className="text-sm text-slate-500 mb-6">
-          「何から始めればいいかわからない」を、8つのステップに分けました。
+          「何から始めればいいかわからない」を、9つのステップに分けました。
         </p>
 
         {/* 主CTAはヒーロー直下にも置く。下まで読まないと始められないと、
@@ -175,7 +176,7 @@ export default function Hub({
           ))}
         </div>
 
-        <h2 className="font-hand text-xl sm:text-2xl text-slate-700">やることは、8つだけ。</h2>
+        <h2 className="font-hand text-xl sm:text-2xl text-slate-700">やることは、9つだけ。</h2>
         <svg className="mx-auto mt-0.5 mb-4 text-sky-500/80" width="140" height="9" viewBox="0 0 150 10" fill="none" aria-hidden="true">
           <path d="M4 6c34-4 72 3 142-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>

@@ -12,7 +12,7 @@ import {
   EventSnapshot,
   SavedEvent,
 } from './types';
-import type { AnnouncementResult, StyleLane } from './types';
+import type { AnnouncementResult, StyleLane, SurveyPlan } from './types';
 import { buildStyleDirective, playfulStyleLabel } from './textStyles';
 import {
   saveToStorage,
@@ -30,6 +30,7 @@ import AnnouncementStep from './components/AnnouncementStep';
 import ImagePromptStep from './components/ImagePromptStep';
 import ChatSetupStep from './components/ChatSetupStep';
 import ShareStep from './components/ShareStep';
+import SurveyStep from './components/SurveyStep';
 import {
   generatePlanIdeas,
   generateTitleCandidates,
@@ -40,6 +41,7 @@ import {
   reviseAnnouncement,
   generateIconPrompt,
   buildIconPromptCandidates,
+  generateSurveyPlan,
   generateThumbnailAssets,
   reviseThumbnailPrompt,
   generateShareTexts,
@@ -332,6 +334,11 @@ function AppContent() {
   const [offkaiChatUrl, setOffkaiChatUrl] = useState<string>(
     () => loadFromStorage<string>('offkaiChatUrl') || ''
   );
+  // 開催後アンケート（オフ会ごと）
+  const [surveyPlan, setSurveyPlan] = useState<SurveyPlan | null>(
+    () => loadFromStorage<SurveyPlan>('surveyPlan')
+  );
+  const [surveyLoading, setSurveyLoading] = useState(false);
   // 各生成物の「生成時点の上流入力」指紋（前工程の変更検知用）
   const [scheduleSourceKey, setScheduleSourceKey] = useState<string>(
     () => loadFromStorage<string>('scheduleSourceKey') || ''
@@ -533,6 +540,7 @@ function AppContent() {
   useEffect(() => { saveToStorage('includeTimetableInAnnouncement', includeTimetable); }, [includeTimetable]);
   useEffect(() => { saveToStorage('thumbnailFeedbackHistory', thumbnailFeedbackHistory); }, [thumbnailFeedbackHistory]);
   useEffect(() => { saveToStorage('announcementPlayful', announcementPlayful); }, [announcementPlayful]);
+  useEffect(() => { saveToStorage('surveyPlan', surveyPlan); }, [surveyPlan]);
   useEffect(() => { saveToStorage('announcementLane', announcementLane); }, [announcementLane]);
   useEffect(() => { saveToStorage('chatSetupLane', chatSetupLane); }, [chatSetupLane]);
   useEffect(() => { saveToStorage('shareLane', shareLane); }, [shareLane]);
@@ -559,6 +567,7 @@ function AppContent() {
       thumbnailAssets,
       shareTexts: shareTextsStandard,
       offkaiChatUrl,
+      surveyPlan,
       maxReached,
       scheduleSourceKey,
       imagesSourceKey,
@@ -586,7 +595,7 @@ function AppContent() {
     setEvents((prev) =>
       prev.map((ev) => (ev.id === activeEventId ? { ...ev, updatedAt: Date.now(), snapshot } : ev))
     );
-  }, [activeEventId, activeIdea, concept, basics, schedule, announcementStandard, eventTags, iconPrompt, thumbnailAssets, shareTextsStandard, offkaiChatUrl, maxReached, scheduleSourceKey, imagesSourceKey, announcementSourceKey, shareStandardSourceKey, announcementFeedbackHistory, scheduleFeedbackHistory, ideasFeedbackHistory, shareFeedbackHistory, thumbnailFeedbackHistory, includeTimetable, announcementLane, chatSetupLane, shareLane, playfulStylePreset, playfulStyleCustom, announcementPlayfulStyle, sharePlayfulStyle, announcementPlayful, announcementPlayfulFeedbackHistory, shareTextsPlayful, sharePlayfulSourceKey, sharePlayfulFeedbackHistory]);
+  }, [activeEventId, activeIdea, concept, basics, schedule, announcementStandard, eventTags, iconPrompt, thumbnailAssets, shareTextsStandard, offkaiChatUrl, surveyPlan, maxReached, scheduleSourceKey, imagesSourceKey, announcementSourceKey, shareStandardSourceKey, announcementFeedbackHistory, scheduleFeedbackHistory, ideasFeedbackHistory, shareFeedbackHistory, thumbnailFeedbackHistory, includeTimetable, announcementLane, chatSetupLane, shareLane, playfulStylePreset, playfulStyleCustom, announcementPlayfulStyle, sharePlayfulStyle, announcementPlayful, announcementPlayfulFeedbackHistory, shareTextsPlayful, sharePlayfulSourceKey, sharePlayfulFeedbackHistory]);
 
   const goToStep = useCallback((next: AppStep) => {
     setStep(next);
@@ -626,6 +635,7 @@ function AppContent() {
     setEventTags([]);
     setIconPrompt(null);
     setThumbnailAssets(null);
+    setSurveyPlan(null);
     setShareTextsStandard(null);
     setOffkaiChatUrl('');
     setMaxReached(AppStep.PROFILE);
@@ -718,6 +728,7 @@ function AppContent() {
     setThumbnailAssets(s.thumbnailAssets);
     setShareTextsStandard(s.shareTexts);
     setOffkaiChatUrl(s.offkaiChatUrl || '');
+    setSurveyPlan(s.surveyPlan || null);
     setMaxReached(s.maxReached || AppStep.BASICS);
     setScheduleSourceKey(s.scheduleSourceKey || '');
     setImagesSourceKey(s.imagesSourceKey || '');
@@ -1092,6 +1103,24 @@ function AppContent() {
       setLoading(false);
     }
   }, [apiKey, announcementForShare, basics, profile, shareLane, shareFeedbackHistory, sharePlayfulFeedbackHistory, playfulStylePreset, playfulStyleCustom, playfulStyleDirective, setShareTextsActive, setShareSourceKeyActive, ensureApiKey]);
+
+  const runGenerateSurveyPlan = useCallback(async () => {
+    if (!ensureApiKey() || !concept || !activeIdea || surveyLoading) return;
+    setSurveyLoading(true);
+    setError(null);
+    try {
+      setSurveyPlan(await generateSurveyPlan(apiKey, concept, activeIdea, basics, profile.organizerName));
+    } catch (e: any) {
+      setError(e?.message || 'アンケートの生成に失敗しました。');
+    } finally {
+      setSurveyLoading(false);
+    }
+  }, [apiKey, concept, activeIdea, basics, profile.organizerName, surveyLoading, ensureApiKey]);
+
+  /** お礼メッセージだけを手直しする（貼り付けるコードにも即反映される） */
+  const handleChangeThanks = useCallback((thanksMessage: string) => {
+    setSurveyPlan((prev) => (prev ? { ...prev, thanksMessage } : prev));
+  }, []);
 
   /** feedbackが空文字の場合は同条件での作り直し、それ以外は要望を反映して作り直す */
   const runGenerateIdeas = useCallback(async (feedback?: string) => {
@@ -1470,7 +1499,22 @@ function AppContent() {
             playfulStylePreset={playfulStylePreset}
             playfulStyleCustom={playfulStyleCustom}
             onBack={() => setStep(AppStep.CHAT_SETUP)}
+            onFinish={() => {
+              goToStep(AppStep.SURVEY);
+              // 開催後に配るものなので、この画面へ来た人にだけ用意する
+              if (!surveyPlan) runGenerateSurveyPlan();
+            }}
+          />
+        );
+      case AppStep.SURVEY:
+        return (
+          <SurveyStep
+            surveyPlan={surveyPlan}
+            loading={surveyLoading}
+            onGenerate={runGenerateSurveyPlan}
+            onChangeThanks={handleChangeThanks}
             onFinish={() => setStep(AppStep.HUB)}
+            onBack={() => setStep(AppStep.SHARE)}
           />
         );
       default:

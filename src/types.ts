@@ -8,6 +8,7 @@ export enum AppStep {
   IMAGE_PROMPTS = 'IMAGE_PROMPTS',
   CHAT_SETUP = 'CHAT_SETUP',
   SHARE = 'SHARE',
+  SURVEY = 'SURVEY',
 }
 
 export interface OrganizerProfile {
@@ -136,6 +137,8 @@ export interface EventSnapshot {
   thumbnailAssets: ThumbnailAssets | null;
   shareTexts: ShareTexts | null;
   offkaiChatUrl: string;
+  /** 開催後アンケート（未作成なら未定義。旧データ互換のため任意） */
+  surveyPlan?: SurveyPlan | null;
   maxReached: AppStep;
   /** 生成物が「どの上流入力から作られたか」の指紋。前工程の変更検知に使う */
   scheduleSourceKey: string;
@@ -186,4 +189,27 @@ export interface SavedEvent {
   id: string;
   updatedAt: number;
   snapshot: EventSnapshot;
+}
+
+/** アンケート設問の種類（Googleフォームの入力形式に対応） */
+export type SurveyQuestionType = 'TEXT' | 'PARAGRAPH' | 'RADIO' | 'CHECKBOX' | 'SCALE';
+
+export interface SurveyQuestionDef {
+  title: string;
+  type: SurveyQuestionType;
+  /** RADIO / CHECKBOX の選択肢 */
+  options?: string[];
+  required: boolean;
+  helpText?: string;
+}
+
+/** 開催後アンケート一式。GASコードとヘッダー画像プロンプトの材料になる */
+export interface SurveyPlan {
+  formTitle: string;
+  formDescription: string;
+  questions: SurveyQuestionDef[];
+  /** 回答直後に表示されるお礼メッセージ */
+  thanksMessage: string;
+  /** フォーム上部に置くヘッダー画像の生成プロンプト */
+  headerImagePrompt: string;
 }

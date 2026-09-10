@@ -13,6 +13,7 @@ import {
   generateThumbnailAssetsServer,
   reviseThumbnailPromptServer,
   generateShareTextsServer,
+  generateSurveyPlanServer,
   callGemini,
 } from './server/geminiBackend';
 
@@ -35,6 +36,15 @@ async function startServer() {
   };
 
   // API Endpoints
+  app.post(
+    '/api/gemini/generate-survey-plan',
+    asyncHandler(async (req, res) => {
+      const { apiKey, concept, idea, basics, organizerName } = req.body;
+      const result = await generateSurveyPlanServer(apiKey, concept, idea, basics, organizerName);
+      res.json(result);
+    })
+  );
+
   app.post(
     '/api/gemini/generate-plan-ideas',
     asyncHandler(async (req, res) => {

@@ -11,6 +11,8 @@ import type {
   ThumbnailAssets,
   ShareTexts,
   AnnouncementResult,
+  SurveyPlan,
+  SurveyQuestionDef,
 } from '../types';
 
 export const AI_STUDIO_SESSION_KEY = '__aistudio-session__';
@@ -298,4 +300,65 @@ export async function generateShareTexts(
     feedbackHistory,
     styleDirective,
   });
+}
+
+export async function generateSurveyPlan(
+  apiKey: string,
+  concept: IdeaConcept,
+  idea: PlanIdea,
+  basics: EventBasics,
+  organizerName: string
+): Promise<SurveyPlan> {
+  return postApi<SurveyPlan>('/api/gemini/generate-survey-plan', {
+    apiKey,
+    concept,
+    idea,
+    basics,
+    organizerName,
+  });
+}
+
+/** GASの文字列リテラルに埋め込むためのエスケープ（引用符・改行でコードが壊れないように） */
+function escapeForGas(str: string): string {
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
+}
+
+/** アンケート設定から、Google Apps Scriptにそのまま貼れるコードを組み立てる */
+export function buildSurveyGasCode(plan: SurveyPlan): string {
+  const questionCode = plan.questions
+    .map((q: SurveyQuestionDef) => {
+      const title = escapeForGas(q.title);
+      const help = q.helpText ? `\n    .setHelpText('${escapeForGas(q.helpText)}')` : '';
+      const required = `\n    .setRequired(${q.required ? 'true' : 'false'})`;
+      const options = (q.options || []).map((o) => `'${escapeForGas(o)}'`).join(', ');
+      switch (q.type) {
+        case 'TEXT':
+          return `  form.addTextItem()\n    .setTitle('${title}')${help}${required};`;
+        case 'RADIO':
+          return `  form.addMultipleChoiceItem()\n    .setTitle('${title}')\n    .setChoiceValues([${options}])${help}${required};`;
+        case 'CHECKBOX':
+          return `  form.addCheckboxItem()\n    .setTitle('${title}')\n    .setChoiceValues([${options}])${help}${required};`;
+        default:
+          return `  form.addParagraphTextItem()\n    .setTitle('${title}')${help}${required};`;
+      }
+    })
+    .join('\n\n');
+
+  return `function createOffkaiSurvey() {
+  // 1. フォームを作る
+  var form = FormApp.create('${escapeForGas(plan.formTitle)}');
+  form.setDescription('${escapeForGas(plan.formDescription)}');
+
+  // 2. 回答後に表示されるお礼メッセージ
+  form.setConfirmationMessage('${escapeForGas(plan.thanksMessage)}');
+
+  // 3. 質問を追加
+${questionCode}
+
+  // 4. できあがったURLをログに出す
+  Logger.log('--------------------------------------------------');
+  Logger.log('編集用URL（主催者用）: ' + form.getEditUrl());
+  Logger.log('回答用URL（参加者へ配る）: ' + form.getPublishedUrl());
+  Logger.log('--------------------------------------------------');
+}`;
 }

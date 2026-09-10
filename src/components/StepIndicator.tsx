@@ -18,6 +18,7 @@ const STEPS: StepDef[] = [
   { step: AppStep.IMAGE_PROMPTS, label: 'アイコンと画像' },
   { step: AppStep.CHAT_SETUP, label: 'チャットを立てる' },
   { step: AppStep.SHARE, label: 'みんなに知らせる' },
+  { step: AppStep.SURVEY, label: '感想を集める' },
 ];
 
 const STEP_LABELS = STEPS.map((s) => s.label);
@@ -52,7 +53,7 @@ export default function StepIndicator({ current, maxReached, onNavigate }: StepI
       />
       <div className="shrink-0">
         <p className="text-sm font-bold text-slate-800 leading-tight">{STEPS[currentIdx].label}</p>
-        <p className="text-[11px] text-slate-400 tabular-nums">{currentIdx + 1} / 8</p>
+        <p className="text-[11px] text-slate-400 tabular-nums">{currentIdx + 1} / {STEPS.length}</p>
       </div>
 
       {/* ステップ名ナビ（到達済みはクリック可） */}
