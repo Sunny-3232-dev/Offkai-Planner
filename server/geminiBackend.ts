@@ -228,6 +228,18 @@ export function extractJSON(text: string): any {
 }
 
 const DESIGNER_PREFIX = 'あなたはプロのデザイナーです。';
+/** 「画風は指定しない」というAIへの制約が、出力プロンプトに断り書きとして漏れることがある。
+ *  画風はツール側で末尾に足すため、その断り書きが残ると同じプロンプト内で矛盾する。取り除く */
+function stripStyleDisclaimer(prompt: string): string {
+  return prompt
+    // 括弧書き:（画風の指定は行いません）（画風はツール側で付与します）など
+    .replace(/[（(][^（）()]*画風[^（）()]*(?:指定|付与|別途)[^（）()]*[）)]/g, '')
+    // 地の文: 画風は指定しない。／画風の指定はしません。など
+    .replace(/画風(?:は|の|を)?(?:ここでは)?指定(?:は|を)?(?:しない|しません|行いません|行わない)[。、]?/g, '')
+    .replace(/[ \t]+([。、）)])/g, '$1')
+    .trim();
+}
+
 function ensureDesignerPrefix(prompt: string): string {
   const trimmed = prompt.trim();
   return trimmed.startsWith(DESIGNER_PREFIX) ? trimmed : `${DESIGNER_PREFIX}${trimmed}`;
@@ -1046,12 +1058,16 @@ export async function generateThumbnailAssetsServer(
 ## imagePromptの必須条件（プロンプト文に必ず含めること）
 - プロンプトは必ず「あなたはプロのデザイナーです。」という一文で書き始めること
 - 横長（16:9）の告知バナー構図
-- 会の内容が伝わる構図（人物が楽しそうに集まる様子など、内容が伝わるモチーフを指示する。画風は指定しない — 画風はツール側で別途付与します）
+- 会の内容が伝わる構図（人物が楽しそうに集まる様子など、内容が伝わるモチーフを指示する）
 - あなたが考えたキャッチーなタイトル（20文字以内）を、画像内で最も大きく目立つように配置すること
 - 日時「${dateTimeText}」と場所「${placeText}」を、タイトルより小さく読みやすいサイズで画像内に配置すること
 - 文字は背景との十分なコントラストを確保し、はっきり読めるようにすること
 - 明るく参加したくなる配色
 - 「参考画像（オフ会のチャットアイコンなど）が添付されている場合は、その画像のキャラクターやモチーフを、雰囲気を損なわないよう自然にサムネイル内へ配置・反映すること。」という一文を必ず含めること
+
+## imagePromptに書いてはいけないこと
+- 画風・タッチ・質感（実写風、イラスト風、3D風、水彩、ポップなど）の指定。画風はこのツールがあとから別の行として付け足すため、ここで指定すると二重になる
+- 「画風は指定しない」「画風はツール側で付与」のような断り書き。これは主催者向けの説明ではなく、あなたへの制約なので、プロンプト文には一切書かない
 
 ## 出力形式（JSON）
 必ず有効なJSONのみを出力してください。imagePromptに完成したプロンプト全文を入れること。
@@ -1066,7 +1082,7 @@ export async function generateThumbnailAssetsServer(
     throw new Error('サムネイル素材の生成結果を読み取れませんでした。再度お試しください。');
   }
   return {
-    imagePrompt: ensureDesignerPrefix(String(parsed.imagePrompt)),
+    imagePrompt: ensureDesignerPrefix(stripStyleDisclaimer(String(parsed.imagePrompt))),
   };
 }
 
@@ -1102,6 +1118,9 @@ ${historyText}
   - 現在のプロンプトにあるタイトル・日時・場所の文字（文言・表記そのまま）を画像内に配置する指示を残す
   - 文字は背景との十分なコントラストを確保し、はっきり読めるようにする指示を残す
   - 参考画像（チャットアイコン等）添付時の反映指示の一文を残す
+- 画風について:
+  - 現在のプロンプトに「画風は指定しない」「画風はツール側で付与」のような断り書きがあれば、それは削除する（主催者向けの文ではない）
+  - 主催者の要望に画風・タッチの指定（漫画風、実写風、水彩など）が含まれる場合だけ、その画風をプロンプト文に書く。要望に無ければ画風には触れない
 
 ## 出力形式（JSON）
 必ず有効なJSONのみを出力してください。imagePromptに完成したプロンプト全文を入れること。
@@ -1116,7 +1135,7 @@ ${historyText}
     throw new Error('サムネイルプロンプトの修正結果を読み取れませんでした。再度お試しください。');
   }
   return {
-    imagePrompt: ensureDesignerPrefix(String(parsed.imagePrompt)),
+    imagePrompt: ensureDesignerPrefix(stripStyleDisclaimer(String(parsed.imagePrompt))),
   };
 }
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { IconPromptResult, IconStyleCandidate, ThumbnailAssets } from '../types';
+import { stripStyleDisclaimer } from '../services/geminiService';
 import { ArrowRightIcon, ChevronLeftIcon, RefreshIcon, CopyIcon, CheckIcon, CircleCropIcon, ImageIcon, LightbulbIcon } from './icons';
 
 interface ImagePromptStepProps {
@@ -192,7 +193,11 @@ export default function ImagePromptStep({
   };
   // 「AIで調整」選択時は画風プリセットを合成しない（AI調整でベースに焼き込まれた画風を上書きしないため）
   const activeTone = selectedTone === 'ai' ? null : THUMBNAIL_TONES.find((t) => t.key === selectedTone) || THUMBNAIL_TONES[0];
-  const fullThumbnailPrompt = thumbnailAssets ? thumbnailAssets.imagePrompt + (activeTone?.style ?? '') : '';
+  // 画風の行を末尾に足す前に、ベース側に残った「画風は指定しない」の断り書きを除く
+  // （以前のAIが出力へ書き込んでいたもの。残ると同じプロンプト内で矛盾する）
+  const fullThumbnailPrompt = thumbnailAssets
+    ? stripStyleDisclaimer(thumbnailAssets.imagePrompt) + (activeTone?.style ?? '')
+    : '';
   const toneLabel = activeTone ? activeTone.label : 'AI調整版';
 
   const [selectedIconStyle, setSelectedIconStyle] = useState<IconStyleCandidate['key']>('text');

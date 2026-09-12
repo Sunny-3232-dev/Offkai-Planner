@@ -153,6 +153,18 @@ export function buildIconPromptCandidates(
   ];
 }
 
+/** 「画風は指定しない」というAIへの制約が、出力プロンプトに断り書きとして漏れることがある。
+ *  画風はツール側で末尾に足すため、その断り書きが残ると同じプロンプト内で矛盾する。取り除く */
+export function stripStyleDisclaimer(prompt: string): string {
+  return prompt
+    // 括弧書き:（画風の指定は行いません）（画風はツール側で付与します）など
+    .replace(/[（(][^（）()]*画風[^（）()]*(?:指定|付与|別途)[^（）()]*[）)]/g, '')
+    // 地の文: 画風は指定しない。／画風の指定はしません。など
+    .replace(/画風(?:は|の|を)?(?:ここでは)?指定(?:は|を)?(?:しない|しません|行いません|行わない)[。、]?/g, '')
+    .replace(/[ \t]+([。、）)])/g, '$1')
+    .trim();
+}
+
 export async function callGemini(apiKey: string, prompt: string): Promise<string> {
   const data = await postApi<{ text: string }>('/api/gemini/call', { apiKey, prompt });
   return data.text;
